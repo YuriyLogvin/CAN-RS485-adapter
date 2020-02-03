@@ -131,7 +131,7 @@ void Kernel::_ProcessDataPacket()
 			break;
 		};
 		break;
-	case EmkAddr::CurrentSensor2:
+	case EmkAddr::CurrentSensor:
 		if ((InterfaceMetodsCurrSens)mNum == InterfaceMetodsCurrSens::CurrentGet)
 		{
 			_ResponseCurrent();
