@@ -28,6 +28,7 @@ public:
 
 	virtual int16_t Rpm();
 	virtual int16_t Current();
+	virtual int16_t Voltage();
 	virtual int16_t TempConstroller();
 	virtual int16_t TempMotor();
 

@@ -10,12 +10,12 @@
 CanTosAdapter::CanTosAdapter()
 	: CanDevice(0,0,0,CanMode::cmStandart)
 {
-	_MotorRpm = 0;
-	_CurrentDc = 0;
+	_MotorRpm = 111;
+	_CurrentDc = 1201; //120.1V
 	_CurrentRms = 0;
 	_ControllerTemperature = 0;
 	_MotorTemperature = 0;
-	_Voltage = 0;
+	_Voltage = 3201; //320.1 V
 	_Voltage12V = 0;
 	_OvercurrentBit = false;
 	_OperationalMode = 0;
@@ -60,6 +60,11 @@ int16_t CanTosAdapter::Rpm()
 int16_t CanTosAdapter::Current()
 {
 	return _CurrentDc;
+}
+
+int16_t CanTosAdapter::Voltage()
+{
+	return _Voltage;
 }
 
 int16_t CanTosAdapter::TempConstroller()

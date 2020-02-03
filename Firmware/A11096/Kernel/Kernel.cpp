@@ -48,7 +48,7 @@ IMotorController* _MotorControllerInterface = 0;
 void Kernel::Init()
 {
 	_ProtocolHost = new ProtocolHost(EmkAddr::SpeedSensor);
-	_ProtocolHost->AddSelfAddr(EmkAddr::CurrentSensor2);
+	_ProtocolHost->AddSelfAddr(EmkAddr::CurrentSensor);
 	_ProtocolHost->AddSelfAddr(EmkAddr::VoltageSensor);
 	_ProtocolHost->DestAddr(EmkAddr::Host);
 
@@ -182,7 +182,7 @@ void Kernel::_ResponseVoltage()
 {
 	_SendMetodHost->InitNewMetod((uint8_t)InterfaceMetodsVoltSens::VoltageGet);
 
-	_SendMetodHost->AddArgumentShort(101);
+	_SendMetodHost->AddArgumentShort(_MotorControllerInterface->Voltage());
 
 	_SendData();
 }
@@ -191,7 +191,7 @@ void Kernel::_ResponseCurrent()
 {
 	_SendMetodHost->InitNewMetod((uint8_t)InterfaceMetodsCurrSens::CurrentGet);
 
-	_SendMetodHost->AddArgumentShort(202);
+	_SendMetodHost->AddArgumentShort(_MotorControllerInterface->Current());
 
 	_SendData();
 }
