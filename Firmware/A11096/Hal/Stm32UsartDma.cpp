@@ -131,6 +131,7 @@ bool Stm32UsartDma::Send(const char* format, ...)
 
 	HAL_UART_Transmit_DMA(_Huart, _UsartSendBuff, strlen((char*)_UsartSendBuff));
 
+	return true;
 }
 
 bool Stm32UsartDma::Redy4Send()

@@ -24,6 +24,14 @@ void BmsKernelTick();
 #include "IDataTransmitter.h"
 
 class Kernel : public IDataTransmitter {
+
+	static void _SendData();
+	static void _ResponsePing();
+	static void _ResponseRpm();
+	static void _ResponseVoltage();
+	static void _ResponseCurrent();
+	static void _ProcessDataPacket();
+
 public:
 	Kernel() {};
 

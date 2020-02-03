@@ -5,7 +5,7 @@
 * Author: Yuriy
 */
 
-
+#include "stdint.h"
 #include "ProtocolHost.h"
 #include "CrcTool.h"
 //#include "new.h"
@@ -14,7 +14,9 @@
 
 ProtocolHost::ProtocolHost( EmkAddr address )
 {
-	_AddressSelf = address;
+	for (int8_t i = 0; i < _AddressSelfCount; i++)
+		_AddressSelf[i] = EmkAddr::Broadcast;
+	_AddressSelf[0] = address;
 	_AddressDest = address;
 	_SendingState = None;
 	_DataBufferLength = 32;
@@ -81,12 +83,19 @@ unsigned char* ProtocolHost::ReceiveData( unsigned char data, unsigned char& dat
 		switch (_ReceiveState)
 		{
 			case Address:
-				if (data == _BroadcastAddress || data == (unsigned char)_AddressSelf)
+				_ReceiveState = None;
+				_AddressPacket = (EmkAddr)data;
+				if (data == _BroadcastAddress)
 				{
 					_ReceiveState = DataLength;
 					break;
 				}
-				_ReceiveState = None;
+				for (int8_t i = 0; i < _AddressSelfCount; i++)
+					if (data == (unsigned char)_AddressSelf[i])
+					{
+						_ReceiveState = DataLength;
+						break;
+					}
 				break;
 			case DataLength:
 				_DataPacketLength = data;
@@ -173,9 +182,22 @@ void ProtocolHost::DestAddr(EmkAddr address)
 	_AddressDest = address;
 }
 
-void ProtocolHost::SelfAddr(EmkAddr address)
+void ProtocolHost::AddSelfAddr(EmkAddr address)
 {
-	_AddressSelf = address;
+	for (int8_t i = 0; i < _AddressSelfCount; i++)
+	{
+		if (_AddressSelf[i] != EmkAddr::Broadcast)
+			continue;
+
+		_AddressSelf[i] = address;
+		break;
+	}
+
+}
+
+EmkAddr ProtocolHost::PacketAddr()
+{
+	return _AddressPacket;
 }
 
 bool ProtocolHost::SendData( unsigned char& data )

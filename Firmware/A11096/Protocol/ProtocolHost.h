@@ -13,11 +13,14 @@
 #include "ReceiveMetodHost.h"
 #include "EmkDeviceAddrss.h"
 
+#define _AddressSelfCount 4
+
 class ProtocolHost
 {
     static const unsigned char _BroadcastAddress = 0;
-    EmkAddr _AddressSelf;
+    EmkAddr _AddressSelf[_AddressSelfCount];
     EmkAddr _AddressDest;
+    EmkAddr _AddressPacket;
     static const unsigned char _CharStart = 0xff;
     static const unsigned char _CharEsc = 0xfe;
    
@@ -64,7 +67,9 @@ public:
 	
 	void DestAddr(EmkAddr address);
 
-	void SelfAddr(EmkAddr address);
+	void AddSelfAddr(EmkAddr address);
+
+	EmkAddr PacketAddr();
 
 protected:
 private:
