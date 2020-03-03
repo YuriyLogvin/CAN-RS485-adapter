@@ -55,11 +55,11 @@ Stm32UsartDma* Hal::UsartExt;
 #define _AdcBits 12
 
 
-void Hal::Init()
+void Hal::Init(bool canSilentMode)
 {
 	UsartExt = new Stm32UsartDma(&huart1, 0x200, 0x100, RS485_EN_GPIO_Port, RS485_EN_Pin);
 
-	CanDevice::Init(&hcan, CanDevice::Speeds::s500k);
+	CanDevice::Init(&hcan, CanDevice::Speeds::s125k, canSilentMode);
 
 }
 

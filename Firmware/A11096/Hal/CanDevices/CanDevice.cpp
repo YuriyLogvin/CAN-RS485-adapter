@@ -24,7 +24,7 @@ extern "C"
 	void Error_Handler(void);
 }
 
-CanDevice::CanDevice(uint32_t extIdFilter, uint32_t idDest, uint16_t sendIntervalMs, uint16_t recieveTimeoutMs, CanMode canMode)
+CanDevice::CanDevice(uint32_t extIdFilter, uint32_t idDest, uint16_t recieveTimeoutMs, CanMode canMode)
 {
 	int8_t i = 0;
 	for (; i < CanDeviceMaxCount; i++)
@@ -36,15 +36,12 @@ CanDevice::CanDevice(uint32_t extIdFilter, uint32_t idDest, uint16_t sendInterva
 
 	_ExtIdFilter = extIdFilter;
 	_IdDest = idDest;
-	_SendIntervalMs = sendIntervalMs;
 	_RecieveTimeoutMs = recieveTimeoutMs;
 	_Ticks = Hal::GetTickCount();
 	_LastReceivingTime = 0;
 	_CanDeviceState = cdsNone;
 
 	_CanMode = canMode;
-
-	_AllowSend = true;
 
 	_RxStdId = 0;
 	_RxExtId = 0;
@@ -92,17 +89,21 @@ CanDevice::~CanDevice()
 		}
 }
 
-void CanDevice::Init(CAN_HandleTypeDef* hCan, Speeds speed)
+bool CanDevice::_CanSilentMode = true;
+
+void CanDevice::Init(CAN_HandleTypeDef* hCan, Speeds speed, bool silentMode)
 {
+	_CanSilentMode = silentMode;
+
 	CanDevice::_hCan = hCan;
 	hCan->Instance = CAN1;
 	hCan->Init.Prescaler = 18;
-	hCan->Init.Mode = CAN_MODE_SILENT;
+	hCan->Init.Mode = _CanSilentMode ? CAN_MODE_SILENT : CAN_MODE_NORMAL;
 	hCan->Init.SyncJumpWidth = CAN_SJW_1TQ;
 	hCan->Init.TimeSeg1 = CAN_BS1_13TQ;  /*BS1*/
 	hCan->Init.TimeSeg2 = CAN_BS2_2TQ; /*BS2*/
 	hCan->Init.TimeTriggeredMode = DISABLE; /*TTCM*/
-	hCan->Init.AutoBusOff = DISABLE; /*ABOM*/
+	hCan->Init.AutoBusOff = ENABLE; /*ABOM*/
 	hCan->Init.AutoWakeUp = DISABLE; /*AWUM*/
 	hCan->Init.AutoRetransmission = DISABLE; /*NART*/
 	hCan->Init.ReceiveFifoLocked = DISABLE; /*RFLM*/
@@ -151,13 +152,23 @@ void CanDevice::Tick()
 			if (_CanDevices[i] == 0)
 				continue;
 			_CanDevices[i]->ProcessMess(rxHeader, rxData);
-		}
+		};
+
+		return;
 	}
+
+	for (int8_t i = 0; i < CanDeviceMaxCount; i++)
+	{
+		if (_CanDevices[i] == 0)
+			continue;
+		_CanDevices[i]->OnTick();
+	}
+
 }
 
 
 
-bool CanDevice::Transmit(bool sendImmediately)
+bool CanDevice::Transmit()
 {
 
 	/*if (!sendImmediately)
@@ -166,43 +177,35 @@ bool CanDevice::Transmit(bool sendImmediately)
 			if (HAL_CAN_GetState(_hCan) == HAL_CAN_STATE_READY)
 				HAL_CAN_RxFifo0FullCallback(_hCan);
 			return false;
-		}*/
+		}
 
-		/*
-	CAN_TX_MAILBOX0
-	if (HAL_CAN_IsTxMessagePending(_hCan))
-		return false;
+	if (HAL_CAN_GetState(_hCan) != HAL_CAN_STATE_READY &&
+		HAL_CAN_GetState(_hCan) != HAL_CAN_STATE_)
+		return false;*/
 
-	if (!_AllowSend)
-		return false;
+	CAN_TxHeaderTypeDef txHndl;
+	txHndl.TransmitGlobalTime = DISABLE;
+	txHndl.RTR = CAN_RTR_DATA;
 
-	if (_CanMode == cmExtended)
+	if (_CanMode == CanMode::Extended)
 	{
-		_hCan->pTxMsg->ExtId = _IdDest;
-		_hCan->pTxMsg->StdId = 0;
-		_hCan->pTxMsg->IDE = CAN_ID_EXT;
+		txHndl.ExtId = _IdDest;
+		txHndl.StdId = 0;
+		txHndl.IDE = CAN_ID_EXT;
 	}
-	else if (_CanMode == cmStandart)
+	else if (_CanMode == CanMode::Standart)
 	{
-		_hCan->pTxMsg->StdId = _IdDest;
-		_hCan->pTxMsg->ExtId = 0;
-		_hCan->pTxMsg->IDE = CAN_ID_STD;
+		txHndl.StdId = _IdDest;
+		txHndl.ExtId = 0;
+		txHndl.IDE = CAN_ID_STD;
 	}
 	else
 		return false;
 
-	_hCan->pTxMsg->DLC = 8;
-	_hCan->pTxMsg->RTR = CAN_RTR_DATA;
-	memcpy(_hCan->pTxMsg->Data, _TxData, sizeof(_TxData));
+	uint32_t txMailbox = 0;
 
-	HAL_CAN_Transmit_IT(_hCan);*/
-
-	if (Hal::GetSpendTicks(_LastReceivingTime) > Hal::GetTicksInMilliSecond() * _RecieveTimeoutMs)
-	{
-		_CanDeviceState = cdsRecieveTimeOut;
-	};
-
-	_Ticks = Hal::GetTickCount();
+	if (HAL_OK != HAL_CAN_AddTxMessage(_hCan, &txHndl, _TxData, &txMailbox))
+		return false;
 
 	return true;
 }
@@ -222,6 +225,10 @@ int32_t CanDevice::ReceivedPackets()
 bool CanDevice::ProcessMess(const CAN_RxHeaderTypeDef& rxHeader, uint8_t data[])
 {
 	return false;
+}
+
+void CanDevice::OnTick()
+{
 }
 
 void CanDevice::_Reinit()

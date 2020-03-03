@@ -18,16 +18,31 @@
 
 #include "CanDevices/CanCurtisAdapter.h"
 #include "CanDevices/CanTosAdapter.h"
+#include "CanDevices/CanCurtisAdapterSdo.h"
+
 
 Kernel* _Kernel = NULL;
 ProtocolHost* _ProtocolHost;
 ReceiveMetodHost* _ReceiveMetodHost;
 SendMetodHost* _SendMetodHost;
 
+#define MODE_SNIFFER 1
+#define MODE_TOS 2
+#define MODE_CURTIS_SDO 3
+#define MODE_CURTIS_PDO 4
+
+#define MODE MODE_CURTIS_SDO
 
 void BmsKernelInit()
 {
-	Hal::Init();
+
+#if (MODE == MODE_CURTIS_SDO)
+#define canSilentMode false
+#else
+#define canSilentMode true
+#endif
+
+	Hal::Init(canSilentMode);
 
 	_Kernel = new Kernel();
 
@@ -56,8 +71,19 @@ void Kernel::Init()
 
 	_SendMetodHost = new SendMetodHost();
 
-	_MotorControllerInterface = new CanTosAdapter();
+	//_MotorControllerInterface = new CanTosAdapter();
 	//_MotorControllerInterface = _CanAdapter = new CanCurtisAdapter(38);
+#if (MODE == MODE_CURTIS_SDO)
+	_MotorControllerInterface = new CanCurtisAdapterSdo(38);
+#else
+#if (MODE == MODE_CURTIS_PDO)
+	_MotorControllerInterface = new CanCurtisAdapter(38);
+#else
+#if (MODE == MODE_TOS)
+	_MotorControllerInterface = new CanTosAdapter();
+#endif //MODE_TOS
+#endif //MODE_CURTIS_PDO
+#endif //MODE_CURTIS_SDO
 	//_CanSniffer = new CanSniffer(_Kernel);
 
 }

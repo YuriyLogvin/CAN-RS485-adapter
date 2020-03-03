@@ -18,11 +18,11 @@ enum CanDeviceStates
 	cdsRecieveTimeOut
 };
 
-enum CanMode
+enum class CanMode
 {
-	cmNone,
-	cmStandart,
-	cmExtended
+	None,
+	Standart,
+	Extended
 };
 
 class CanDevice {
@@ -30,12 +30,12 @@ class CanDevice {
 	//friend void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan);
 	uint32_t _ExtIdFilter;
 	int32_t _Ticks;
-	uint16_t _SendIntervalMs;
 	uint16_t _RecieveTimeoutMs;
 	CanDeviceStates _CanDeviceState;
 	static CAN_HandleTypeDef* _hCan;
+	static bool _CanSilentMode;
 public:
-	CanDevice(uint32_t extIdFilter, uint32_t idDest, uint16_t sendIntervalMs, uint16_t recieveTimeoutMs, CanMode canMode = cmExtended);
+	CanDevice(uint32_t extIdFilter, uint32_t idDest, uint16_t recieveTimeoutMs, CanMode canMode = CanMode::Extended);
 	virtual ~CanDevice();
 
 	enum class Speeds
@@ -50,25 +50,25 @@ public:
 	static int16_t Errors(uint32_t& errBits);
 	static void ResetErrors();
 
-	static void Init(CAN_HandleTypeDef* hCan, Speeds speed);
+	static void Init(CAN_HandleTypeDef* hCan, Speeds speed, bool silentMode);
 	static void Tick();
 
 
 protected:
 	uint32_t _IdDest;
 	CanMode _CanMode;
-	bool _AllowSend;
 
 	uint8_t 		_TxData[8];
 	uint32_t 		_RxExtId;
 	uint32_t 		_RxStdId;
 	int32_t _LastReceivingTime;
 
-	bool Transmit(bool sendImmediately);
+	bool Transmit();
 
 	CanDeviceStates _GetState();
 
 	virtual bool ProcessMess(const CAN_RxHeaderTypeDef& rxHeader, uint8_t data[]);
+	virtual void OnTick();
 
 	void _Reinit();
 

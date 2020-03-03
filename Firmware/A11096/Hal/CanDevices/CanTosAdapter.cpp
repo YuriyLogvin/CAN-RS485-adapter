@@ -8,7 +8,7 @@
 #include <CanTosAdapter.h>
 
 CanTosAdapter::CanTosAdapter()
-	: CanDevice(0,0,0,CanMode::cmStandart)
+	: CanDevice(0,0,0,CanMode::Standart)
 {
 	_MotorRpm = 111;
 	_CurrentDc = 1201; //120.1V

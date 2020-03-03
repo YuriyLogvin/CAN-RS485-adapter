@@ -21,7 +21,7 @@ enum class CurtisMessType
 };
 
 CanCurtisAdapter::CanCurtisAdapter(uint8_t nodeId)
-	: CanDevice(0,0,0,0)
+	: CanDevice(0,0,0)
 {
 	_NodeId = nodeId;
 	_MotorRpm = 0;

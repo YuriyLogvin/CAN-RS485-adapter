@@ -10,7 +10,7 @@
 #include <string.h>
 
 CanSniffer::CanSniffer(IDataTransmitter* dataTransmitter)
-	: CanDevice(0, 0, 0, 3000)
+	: CanDevice(0, 0, 3000)
 {
 	_DataTransmitter = dataTransmitter;
 	_LastReceivingTimeTransmitted = 0;

@@ -14,7 +14,7 @@
 class Hal {
 
 public:
-	static void Init();
+	static void Init(bool canSilentMode);
 	static void Tick();
 
 	static bool LedBlue();
