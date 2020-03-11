@@ -20,8 +20,8 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-
-#include "Kernel.h"
+#include "stm32f1xx_it.h"
+#include "bootloader.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -44,13 +44,10 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-CAN_HandleTypeDef hcan;
 
 IWDG_HandleTypeDef hiwdg;
 
 UART_HandleTypeDef huart1;
-DMA_HandleTypeDef hdma_usart1_rx;
-DMA_HandleTypeDef hdma_usart1_tx;
 
 /* USER CODE BEGIN PV */
 
@@ -59,10 +56,12 @@ DMA_HandleTypeDef hdma_usart1_tx;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
 static void MX_IWDG_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
+void XmLedEn(char val);
+void XmLedAlt(void);
+void XmWriteCom(unsigned char b);
 
 /* USER CODE END PFP */
 
@@ -93,32 +92,43 @@ int main(void)
 
   /* Configure the system clock */
   SystemClock_Config();
-  __enable_irq();
+
   /* USER CODE BEGIN SysInit */
 
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_IWDG_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  BmsKernelInit();
+  if (HAL_GPIO_ReadPin(NeedBoot_GPIO_Port, NeedBoot_Pin) == GPIO_PIN_RESET)
+	  Jump2Prog();
 
-  HAL_GPIO_WritePin(CAN_EN_GPIO_Port,CAN_EN_Pin,GPIO_PIN_SET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  //HAL_Delay(500);
-	  //HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
-		//return (HAL_GPIO_ReadPin(LED_GPIO_Port, LED_Pin) == GPIO_PIN_SET);
-	  BmsKernelTick();
-    /* USER CODE END WHILE */
+	//uint32_t ticks = HAL_GetTick();
+	  if (Boot())
+	  {
+		  while (HAL_GPIO_ReadPin(NeedBoot_GPIO_Port, NeedBoot_Pin) != GPIO_PIN_SET)
+			  XmLedEn(1); //Wait boot-switch removing
+		  Jump2Prog();
+	  }
+
+	 // XmWriteCom('1');
+	  /*XmWriteCom('2');
+	  XmWriteCom('3');
+	  XmWriteCom('\n');
+	  XmWriteCom('\r');*/
+
+	//uint32_t ticks = HAL_GetTick();
+	//while (ticks + 10 > HAL_GetTick());
+
 	  HAL_IWDG_Refresh(&hiwdg);
     /* USER CODE BEGIN 3 */
   }
@@ -224,24 +234,6 @@ static void MX_USART1_UART_Init(void)
 
 }
 
-/** 
-  * Enable DMA controller clock
-  */
-static void MX_DMA_Init(void) 
-{
-  /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE();
-
-  /* DMA interrupt init */
-  /* DMA1_Channel4_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
-  /* DMA1_Channel5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel5_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel5_IRQn);
-
-}
-
 /**
   * @brief GPIO Initialization Function
   * @param None
@@ -257,18 +249,129 @@ static void MX_GPIO_Init(void)
 	  __HAL_RCC_GPIOA_CLK_ENABLE();
 
 	  /*Configure GPIO pin Output Level */
-	  HAL_GPIO_WritePin(GPIOB, LED_Pin|CAN_S_Pin|CAN_EN_Pin|RS485_EN_Pin, GPIO_PIN_RESET);
+	  HAL_GPIO_WritePin(GPIOB, LED_Pin|RS485_EN_Pin, GPIO_PIN_RESET);
 
 	  /*Configure GPIO pins : LED_Pin CAN_S_Pin CAN_EN_Pin RS485_EN_Pin */
-	  GPIO_InitStruct.Pin = LED_Pin|CAN_S_Pin|CAN_EN_Pin|RS485_EN_Pin;
+	  GPIO_InitStruct.Pin = LED_Pin|RS485_EN_Pin;
 	  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	  GPIO_InitStruct.Pull = GPIO_NOPULL;
 	  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
+	  /*Configure GPIO pin : NeedBoot_Pin */
+		GPIO_InitStruct.Pin = NeedBoot_Pin;
+		GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+		GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+		HAL_GPIO_Init(NeedBoot_GPIO_Port, &GPIO_InitStruct);
 }
 
 /* USER CODE BEGIN 4 */
+
+uint32_t XmGetTickCount()
+{
+	return HAL_GetTick();
+}
+
+void XmLedEn(char val)
+{
+	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, val?GPIO_PIN_SET:GPIO_PIN_RESET);
+}
+
+void XmLedAlt(void)
+{
+	HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+}
+
+char XmReadCom(unsigned char* b, unsigned short readComTimeout)
+{
+	uint32_t ticks = HAL_GetTick();
+	while (ticks + readComTimeout > HAL_GetTick())
+	{
+		if (HAL_OK == HAL_UART_Receive(&huart1, b, 1, 0))
+			return 1;
+	}
+
+	return 0;
+}
+
+void XmWriteCom(unsigned char b)
+{
+	int i;
+	HAL_GPIO_WritePin(GPIOB, RS485_EN_Pin, GPIO_PIN_SET);
+	for (i = 0; i < 20; i++);
+	HAL_UART_Transmit(&huart1, &b, 1, 100);
+	while(!(__HAL_UART_GET_FLAG(&huart1, UART_FLAG_TXE)));
+	for (i = 0; i < 20; i++);
+	HAL_GPIO_WritePin(GPIOB, RS485_EN_Pin, GPIO_PIN_RESET);
+}
+
+void XmClearBuffers()
+{
+}
+
+void wdt_reset()
+{
+  HAL_IWDG_Refresh(&hiwdg);
+}
+
+/*void Hal::Init(bool canSilentMode)
+{
+	UsartExt = new Stm32UsartDma(&huart1, 0x200, 0x100, RS485_EN_GPIO_Port, RS485_EN_Pin);
+
+	CanDevice::Init(&hcan, CanDevice::Speeds::s125k, canSilentMode);
+
+}
+
+void Hal::Tick()
+{
+	CanDevice::Tick();
+}
+
+bool Hal::LedBlue()
+{
+	return (HAL_GPIO_ReadPin(LED_GPIO_Port, LED_Pin) == GPIO_PIN_SET);
+}
+
+void Hal::LedBlue(bool value)
+{
+	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, value?GPIO_PIN_SET:GPIO_PIN_RESET);
+}
+
+short Hal::GetTicksInSecond()
+{
+	return 1000;
+}
+
+short Hal::GetTicksInMilliSecond()
+{
+	return 1;
+}
+
+int32_t Hal::GetTickCount()
+{
+	return HAL_GetTick();
+}
+
+int32_t Hal::GetSpendTicks(int32_t fromTicks)
+{
+	int32_t nowT = GetTickCount();
+	if (nowT >= fromTicks)
+		return nowT - fromTicks;
+
+	return (0xffffffff - fromTicks + nowT);
+	//return embedded_get_spent_ms(fromTicks);
+}
+
+void Hal::Sleep(uint16_t sleepMs)
+{
+	int32_t t = Hal::GetTickCount();
+	while (Hal::GetSpendTicks(t) < Hal::GetTicksInMilliSecond() * sleepMs);
+}
+
+void Hal::UpdateWdt()
+{
+	HAL_IWDG_Refresh(&hiwdg);*/
+
 
 /* USER CODE END 4 */
 
