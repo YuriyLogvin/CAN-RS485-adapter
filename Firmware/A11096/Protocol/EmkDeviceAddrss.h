@@ -14,4 +14,10 @@ enum class EmkAddr
 	CurrentSensor3 = 13,
 	SpeedSensor = 14,
 	SpeedSensor2 = 15,
+	LogicalInputs = 16,
+	LogicalInputs2 = 17,
+	TemperatureSensor = 18,
+	TemperatureSensor2 = 19,
+	TemperatureSensor3 = 20,
+	TemperatureSensor4 = 21,
 };

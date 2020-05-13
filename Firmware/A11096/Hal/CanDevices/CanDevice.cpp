@@ -186,6 +186,7 @@ bool CanDevice::Transmit()
 	CAN_TxHeaderTypeDef txHndl;
 	txHndl.TransmitGlobalTime = DISABLE;
 	txHndl.RTR = CAN_RTR_DATA;
+	txHndl.DLC = 8;
 
 	if (_CanMode == CanMode::Extended)
 	{

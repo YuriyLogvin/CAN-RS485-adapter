@@ -73,3 +73,8 @@ int16_t CanCurtisAdapter::TempMotor()
 {
 	return _MotorTemperature;
 }
+
+uint16_t CanCurtisAdapter::Switches()
+{
+	return 0;
+}

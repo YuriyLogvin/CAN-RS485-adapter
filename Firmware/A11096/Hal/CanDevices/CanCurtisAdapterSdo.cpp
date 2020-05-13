@@ -6,10 +6,12 @@
  */
 
 #include <CanCurtisAdapterSdo.h>
+#include <sys/_stdint.h>
 #include "Hal.h"
 
 enum class SDOTypes
 {
+	EMERGENCY = 0x1,
 	SDO_MISO = 0xB,
 	SDO_MOSI = 0xC
 };
@@ -26,7 +28,9 @@ CanCurtisAdapterSdo::CanCurtisAdapterSdo(uint8_t nodeId)
 	_Voltage = 0;
 	_TempConstroller = 0;
 	_TempMotor = 0;
+	_ErrorMessage = false;
 
+	_Switches = 0;
 }
 
 void CanCurtisAdapterSdo::OnTick()
@@ -36,10 +40,10 @@ void CanCurtisAdapterSdo::OnTick()
 
 	switch (_RequestsState)
 	{
-	case RequestsStates::Voltage:
-		_RequestsState = RequestsStates::Rpm;
-		break;
 	case RequestsStates::Rpm:
+		_RequestsState = RequestsStates::Voltage;
+		break;
+	case RequestsStates::Voltage:
 		_RequestsState = RequestsStates::TempController;
 		break;
 	case RequestsStates::TempController:
@@ -49,10 +53,22 @@ void CanCurtisAdapterSdo::OnTick()
 		_RequestsState = RequestsStates::CurrentRms;
 		break;
 	case RequestsStates::CurrentRms:
-		_RequestsState = RequestsStates::Voltage;
+		_RequestsState = RequestsStates::Switches;
+		break;
+	case RequestsStates::Switches:
+		_RequestsState = RequestsStates::ErrorRegister;
+		break;
+	case RequestsStates::ErrorRegister:
+		/*if (_ErrorMessage)
+			_RequestsState = RequestsStates::EmergencyObject;
+		else*/
+			_RequestsState = RequestsStates::Rpm;
+		break;
+	case RequestsStates::EmergencyObject:
+		_RequestsState = RequestsStates::Rpm;
 		break;
 	default:
-		_RequestsState = RequestsStates::Voltage;
+		_RequestsState = RequestsStates::Rpm;
 		break;
 	}
 
@@ -60,6 +76,11 @@ void CanCurtisAdapterSdo::OnTick()
 
 	_TxData[1] = (uint8_t)_RequestsState;
 	_TxData[2] = (uint16_t)_RequestsState >> 8;
+	_TxData[3] = 0;
+	_TxData[4] = 0;
+	_TxData[5] = 0;
+	_TxData[6] = 0;
+	_TxData[7] = 0;
 
 	_IdDest = _NodeId | ((uint16_t)SDOTypes::SDO_MOSI << 7);
 	CanDevice::Transmit();
@@ -68,13 +89,31 @@ void CanCurtisAdapterSdo::OnTick()
 
 }
 
+void CanCurtisAdapterSdo::_ProcessErr(uint8_t data[])
+{
+
+}
+
 bool CanCurtisAdapterSdo::ProcessMess(const CAN_RxHeaderTypeDef& rxHeader, uint8_t data[])
 {
 	if (rxHeader.StdId != (_NodeId | ((uint16_t)SDOTypes::SDO_MISO << 7)))
-		return false;
+	{
+		if (rxHeader.StdId != (_NodeId | ((uint16_t)SDOTypes::EMERGENCY << 7)))
+			return false;
+
+		_ProcessErr(data);
+		return true;
+	}
 
 	if ((data[0] & 0xE0) != 0x40)
-		return false; /*Check CS*/
+	{
+		if ((data[0] & 0xE0) != 0x80)
+			return false; /*Check CS*/
+
+		//The “Error” (Abort SDO Transfer) Message
+		//1. 0x06020000 – “Object does not exist in dictionary”.
+		return true;
+	}
 
 	if (data[1] != (uint8_t)_RequestsState ||
 		data[2] != (uint16_t)_RequestsState >> 8)
@@ -102,6 +141,18 @@ bool CanCurtisAdapterSdo::ProcessMess(const CAN_RxHeaderTypeDef& rxHeader, uint8
 		break;
 	case RequestsStates::CurrentRms:
 		_Current = (int16_t)(sdoValue >> 16);
+		break;
+	case RequestsStates::ErrorRegister:
+		_ErrorMessage = (sdoValue >> 16) == 1;
+		break;
+	case RequestsStates::EmergencyObject:
+		_Current = (int16_t)(sdoValue >> 16);
+		break;
+	case RequestsStates::Switches:
+		_Switches = (uint16_t)(sdoValue >> 16);
+		_Switches &= 0x7fff;
+		if (_ErrorMessage)
+			_Switches |= 0x8000;
 		break;
 	default:
 		break;
@@ -139,3 +190,7 @@ int16_t CanCurtisAdapterSdo::TempMotor()
 	return _TempMotor;
 }
 
+uint16_t CanCurtisAdapterSdo::Switches()
+{
+	return _Switches;
+}

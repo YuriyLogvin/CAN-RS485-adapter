@@ -26,6 +26,7 @@ public:
 	virtual int16_t Voltage() {return 0;};
 	virtual int16_t TempConstroller();
 	virtual int16_t TempMotor();
+	virtual uint16_t Switches();
 
 
 protected:

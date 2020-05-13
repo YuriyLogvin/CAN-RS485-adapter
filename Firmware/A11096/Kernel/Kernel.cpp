@@ -15,6 +15,8 @@
 #include "InterfaceMetodsSpeedSens.h"
 #include "InterfaceMetodsCurSens.h"
 #include "InterfaceMetodsVoltSens.h"
+#include "InterfaceMetodsLogicalInputs.h"
+#include "InterfaceMetodsTempSens.h"
 
 #include "CanDevices/CanCurtisAdapter.h"
 #include "CanDevices/CanTosAdapter.h"
@@ -63,16 +65,17 @@ IMotorController* _MotorControllerInterface = 0;
 void Kernel::Init()
 {
 	_ProtocolHost = new ProtocolHost(EmkAddr::SpeedSensor);
-	_ProtocolHost->AddSelfAddr(EmkAddr::CurrentSensor);
-	_ProtocolHost->AddSelfAddr(EmkAddr::VoltageSensor);
+	//_ProtocolHost->AddSelfAddr(EmkAddr::CurrentSensor);
+	//_ProtocolHost->AddSelfAddr(EmkAddr::VoltageSensor);
+	_ProtocolHost->AddSelfAddr(EmkAddr::LogicalInputs);
+	_ProtocolHost->AddSelfAddr(EmkAddr::TemperatureSensor);
 	_ProtocolHost->DestAddr(EmkAddr::Host);
+
 
 	_ReceiveMetodHost = new ReceiveMetodHost();
 
 	_SendMetodHost = new SendMetodHost();
 
-	//_MotorControllerInterface = new CanTosAdapter();
-	//_MotorControllerInterface = _CanAdapter = new CanCurtisAdapter(38);
 #if (MODE == MODE_CURTIS_SDO)
 	_MotorControllerInterface = new CanCurtisAdapterSdo(38);
 #else
@@ -170,6 +173,32 @@ void Kernel::_ProcessDataPacket()
 		};
 
 		break;
+	case EmkAddr::LogicalInputs:
+		if ((InterfaceMetodsLogicalInputs)mNum == InterfaceMetodsLogicalInputs::InputsStateGet)
+		{
+			_ResponseInputs();
+			break;
+		}
+		if ((EmkMetods)mNum == EmkMetods::Ping)
+		{
+			_ResponsePing();
+			break;
+		};
+		break;
+
+	case EmkAddr::TemperatureSensor:
+		if ((InterfaceMetodsTempSens)mNum == InterfaceMetodsTempSens::TemperatureGet)
+		{
+			_ResponseTemperature();
+			break;
+		}
+		if ((EmkMetods)mNum == EmkMetods::Ping)
+		{
+			_ResponsePing();
+			break;
+		};
+		break;
+
 	default:
 		break;
 	};
@@ -218,6 +247,26 @@ void Kernel::_ResponseCurrent()
 	_SendMetodHost->InitNewMetod((uint8_t)InterfaceMetodsCurrSens::CurrentGet);
 
 	_SendMetodHost->AddArgumentShort(_MotorControllerInterface->Current());
+
+	_SendData();
+}
+
+void Kernel::_ResponseInputs()
+{
+	_SendMetodHost->InitNewMetod((uint8_t)InterfaceMetodsLogicalInputs::InputsStateGet);
+
+	_SendMetodHost->AddArgumentUshort(_MotorControllerInterface->Switches());
+
+	_SendData();
+}
+
+void Kernel::_ResponseTemperature()
+{
+	_SendMetodHost->InitNewMetod((uint8_t)InterfaceMetodsTempSens::TemperatureGet);
+
+	_SendMetodHost->AddArgumentShort(_MotorControllerInterface->TempConstroller());
+
+	_SendMetodHost->AddArgumentShort(_MotorControllerInterface->TempMotor());
 
 	_SendData();
 }

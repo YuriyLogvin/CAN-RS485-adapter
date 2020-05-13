@@ -17,6 +17,8 @@ public:
 	virtual int16_t Voltage() = 0; /*In 0.1V*/
 	virtual int16_t TempConstroller() = 0; /*In 0.1 Deg*/
 	virtual int16_t TempMotor() = 0; /*In 0.1 Deg*/
+	virtual uint16_t Switches() = 0;
+
 };
 
 #endif /* CANDEVICES_IMOTORCONTROLLER_H_ */
