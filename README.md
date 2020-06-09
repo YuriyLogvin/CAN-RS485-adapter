@@ -1,5 +1,8 @@
 # CAN-RS485-adapter
 
+HW device in shop:
+https://shop.emkit.net/ru_RU/shop/product/rs-485-can-21
+
 For first use:
 - Clone repository to local folder
 - Run SW4STM32 (System Workbench for STM32)
