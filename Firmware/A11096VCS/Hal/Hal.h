@@ -11,20 +11,14 @@
 #include <stdint.h>
 #include "Stm32UsartDma.h"
 
-#define MODE_SNIFFER 1
-#define MODE_TOS 2
-#define MODE_CURTIS_SDO 3
-#define MODE_CURTIS_PDO 4
-#define MODE_KELLY 5
-
 #ifdef DEBUG
-//#define MODE MODE_CURTIS_SDO
+
 #endif
 
 class Hal {
 
 public:
-	static void Init(bool canSilentMode);
+	static void Init();
 	static void Tick();
 
 	static bool LedBlue();

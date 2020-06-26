@@ -21,19 +21,13 @@
 #include "CanDevices/CanCurtisAdapter.h"
 #include "CanDevices/CanTosAdapter.h"
 #include "CanDevices/CanCurtisAdapterSdo.h"
+#include "CanDevices/CanKellyAdapter.h"
 
 
 Kernel* _Kernel = NULL;
 ProtocolHost* _ProtocolHost;
 ReceiveMetodHost* _ReceiveMetodHost;
 SendMetodHost* _SendMetodHost;
-
-#define MODE_SNIFFER 1
-#define MODE_TOS 2
-#define MODE_CURTIS_SDO 3
-#define MODE_CURTIS_PDO 4
-
-#define MODE MODE_CURTIS_SDO
 
 void BmsKernelInit()
 {
@@ -84,6 +78,10 @@ void Kernel::Init()
 #else
 #if (MODE == MODE_TOS)
 	_MotorControllerInterface = new CanTosAdapter();
+#else
+#if (MODE == MODE_KELLY)
+	_MotorControllerInterface = new CanKellyAdapter();
+#endif //MODE_KELLY
 #endif //MODE_TOS
 #endif //MODE_CURTIS_PDO
 #endif //MODE_CURTIS_SDO
