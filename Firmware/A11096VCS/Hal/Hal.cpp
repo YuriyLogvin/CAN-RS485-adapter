@@ -59,7 +59,7 @@ void Hal::Init()
 {
 	UsartExt = new Stm32UsartDma(&huart1, 0x200, 0x100, RS485_EN_GPIO_Port, RS485_EN_Pin);
 
-	auto canSpeed = CanDevice::Speeds::s125k;
+	auto canSpeed = CanDevice::Speeds::s250k;
 
 	CanDevice::Init(&hcan, canSpeed, false);
 

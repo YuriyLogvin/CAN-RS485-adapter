@@ -81,16 +81,39 @@ void Kernel::Init()
 #else
 #if (MODE == MODE_KELLY)
 	_MotorControllerInterface = new CanKellyAdapter();
+#else
+#if	(MODE == MODE_SNIFFER)
+	_MotorControllerInterface = 0;
+	_CanSniffer = new CanSniffer(_Kernel);
+#endif //MODE_SNIFFER
 #endif //MODE_KELLY
 #endif //MODE_TOS
 #endif //MODE_CURTIS_PDO
 #endif //MODE_CURTIS_SDO
-	//_CanSniffer = new CanSniffer(_Kernel);
+	//
 
 }
 
 int32_t _KernelTicks = 0;
 
+#if (MODE==MODE_SNIFFER)
+void Kernel::Tick()
+{
+	uint8_t b = 0;
+	for (;Hal::UsartExt->Receive(&b, 1) > 0;)
+	{ //add data processing if you need
+	}
+
+	if (Hal::GetSpendTicks(_KernelTicks) < Hal::GetTicksInMilliSecond() * 1000)
+		return;
+
+	Hal::LedBlue(!Hal::LedBlue());
+
+	Hal::UsartExt->Send("Hertbeat %i\n\r", Hal::GetTickCount());
+
+	_KernelTicks = Hal::GetTickCount();
+}
+#else //MODE_SNIFFER
 void Kernel::Tick()
 {
 
@@ -122,10 +145,12 @@ void Kernel::Tick()
 		//Hal::UsartExt->Send("R:%i,C:%i,CT:%i,MT:%i\n\r", _MotorControllerInterface->Rpm(), _MotorControllerInterface->Current(), _MotorControllerInterface->TempConstroller(), _MotorControllerInterface->TempMotor());
 	}
 
-	//Hal::UsartExt->Send("Hertbeat %i\n\r", Hal::GetTickCount());
+	Hal::UsartExt->Send("Hertbeat1 %i\n\r", Hal::GetTickCount());
 
 	_KernelTicks = Hal::GetTickCount();
 }
+#endif //MODE_SNIFFER
+
 
 void Kernel::_ProcessDataPacket()
 {

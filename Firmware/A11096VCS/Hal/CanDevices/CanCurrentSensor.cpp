@@ -28,9 +28,8 @@ void CanCurrentSensor::OnTick()
 	_TxData[0] = 0;
 	_TxData[1] = (uint8_t)_Current;
 	_TxData[2] = (uint16_t)_Current >> 8;
-	_TxData[1] = (uint8_t)_Temp;
-	_TxData[2] = (uint16_t)_Temp >> 8;
-	_TxData[4] = 0;
+	_TxData[3] = (uint8_t)_Temp;
+	_TxData[4] = (uint16_t)_Temp >> 8;
 	_TxData[5] = 0;
 	_TxData[6] = 0;
 	_TxData[7] = 0;
