@@ -48,7 +48,7 @@ bool _UseSniffer = false;
 	return _uwTick;
 }*/
 
-Stm32UsartDma* Hal::UsartExt;
+Stm32UsartDmaIt* Hal::UsartExt;
 
 #define _ReferenceVoltage 3265
 #define _InputDivider 11
@@ -57,14 +57,21 @@ Stm32UsartDma* Hal::UsartExt;
 
 void Hal::Init(bool canSilentMode)
 {
-	UsartExt = new Stm32UsartDma(&huart1, 0x200, 0x100, RS485_EN_GPIO_Port, RS485_EN_Pin);
+	UsartExt = new Stm32UsartDmaIt(&huart1, 0x200, 0x100, RS485_EN_GPIO_Port, RS485_EN_Pin);
 
 	auto canSpeed = CanDevice::Speeds::s125k;
 
+#if (MODE == MODE_SNIFFER)
+	canSpeed = CanDevice::Speeds::s250k;
+#else
+#if (MODE == MODE_CURTIS_SDO)
+	//canSpeed = CanDevice::Speeds::s250k;
+#else
 #if (MODE == MODE_KELLY)
 	canSpeed = CanDevice::Speeds::s250k;
-#endif
-
+#endif //MODE == MODE_KELLY
+#endif //MODE == MODE_CURTIS_SDO
+#endif //MODE == MODE_SNIFFER
 	CanDevice::Init(&hcan, canSpeed, canSilentMode);
 
 }

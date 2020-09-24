@@ -28,6 +28,7 @@ class Kernel : public IDataTransmitter {
 	static void _SendData();
 	static void _SendPing();
 	static void _SendGetCurrent();
+	static void _SendGetVoltage();
 	static void _ProcessDataPacket();
 
 public:

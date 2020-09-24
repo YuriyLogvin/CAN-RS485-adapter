@@ -20,4 +20,6 @@ enum class EmkAddr
 	TemperatureSensor2 = 19,
 	TemperatureSensor3 = 20,
 	TemperatureSensor4 = 21,
+	VoltageSensor2 = 22,
+	VoltageSensor3 = 23,
 };

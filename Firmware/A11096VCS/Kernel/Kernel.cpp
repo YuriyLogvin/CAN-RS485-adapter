@@ -19,6 +19,7 @@
 #include "InterfaceMetodsTempSens.h"
 
 #include <CanCurrentSensor.h>
+#include <CanVoltageSensor.h>
 
 Kernel* _Kernel = NULL;
 ProtocolHost* _ProtocolHost;
@@ -44,7 +45,10 @@ void BmsKernelTick()
 
 CanSniffer* _CanSniffer = 0;
 
-CanCurrentSensor* _CanInterface = 0;
+CanCurrentSensor* _CanCurrInterface1 = 0;
+CanCurrentSensor* _CanCurrInterface2 = 0;
+CanVoltageSensor* _CanVoltInterface1 = 0;
+CanVoltageSensor* _CanVoltInterface2 = 0;
 
 void Kernel::Init()
 {
@@ -55,11 +59,40 @@ void Kernel::Init()
 
 	_SendMetodHost = new SendMetodHost();
 
-	_CanInterface = new CanCurrentSensor(101);
+	_CanCurrInterface1 = new CanCurrentSensor(101);
+	_CanCurrInterface2 = new CanCurrentSensor(102);
 
+	_CanVoltInterface1 = new CanVoltageSensor(111);
+	_CanVoltInterface2 = new CanVoltageSensor(112);
 }
 
 int32_t _KernelTicks = 0;
+
+enum class RequestStages
+{
+	None,
+	CurrentSensor1,
+	CurrentSensor2,
+	VoltageSensor1,
+	VoltageSensor2,
+};
+
+RequestStages& operator ++(RequestStages& a)
+{
+	int r = (int)a;
+	if (++r > (int)RequestStages::VoltageSensor2)
+		r = (int)RequestStages::None;
+	return a = (RequestStages)r;
+}
+
+RequestStages operator ++(RequestStages& a, int)
+{
+	RequestStages res = a;
+	++a;
+	return res;
+}
+
+RequestStages _RequestStage = RequestStages::None;
 
 void Kernel::Tick()
 {
@@ -85,7 +118,28 @@ void Kernel::Tick()
 	if (Hal::GetSpendTicks(_KernelTicks) < Hal::GetTicksInMilliSecond() * 1000)
 		return;
 
-	_SendGetCurrent();
+	_RequestStage++;
+	switch (_RequestStage)
+	{
+	case RequestStages::CurrentSensor1:
+		_ProtocolHost->DestAddr(EmkAddr::CurrentSensor);
+		_SendGetCurrent();
+		break;
+	case RequestStages::CurrentSensor2:
+		_ProtocolHost->DestAddr(EmkAddr::CurrentSensor2);
+		_SendGetCurrent();
+		break;
+	case RequestStages::VoltageSensor1:
+		_ProtocolHost->DestAddr(EmkAddr::VoltageSensor);
+		_SendGetVoltage();
+		break;
+	case RequestStages::VoltageSensor2:
+		_ProtocolHost->DestAddr(EmkAddr::VoltageSensor2);
+		_SendGetVoltage();
+		break;
+	default:
+		break;
+	}
 
 	Hal::LedBlue(!Hal::LedBlue());
 
@@ -96,14 +150,50 @@ void Kernel::_ProcessDataPacket()
 {
 	auto mNum = _ReceiveMetodHost->GetMetodNumber();
 
-	if ((InterfaceMetodsCurrSens)mNum == InterfaceMetodsCurrSens::CurrentGet)
+	switch (_RequestStage)
 	{
-		int16_t sVal = 0;
-		if (_ReceiveMetodHost->GetArgumentShort(0, sVal))
-			_CanInterface->SetCurrent(sVal);
-		if (_ReceiveMetodHost->GetArgumentShort(1, sVal))
-			_CanInterface->SetTemp(sVal);
+	case RequestStages::CurrentSensor1:
+	case RequestStages::CurrentSensor2:
+		if ((InterfaceMetodsCurrSens)mNum == InterfaceMetodsCurrSens::CurrentGet)
+		{
+			int16_t sVal = 0;
+			if (!_ReceiveMetodHost->GetArgumentShort(0, sVal))
+				break;
+
+			if (_RequestStage == RequestStages::CurrentSensor1)
+				_CanCurrInterface1->SetCurrent(sVal);
+			else
+				_CanCurrInterface2->SetCurrent(sVal);
+
+			if (!_ReceiveMetodHost->GetArgumentShort(1, sVal))
+				break;
+
+			if (_RequestStage == RequestStages::CurrentSensor1)
+				_CanCurrInterface1->SetTemp(sVal);
+			else
+				_CanCurrInterface2->SetTemp(sVal);
+		}
+		break;
+	case RequestStages::VoltageSensor1:
+		if ((InterfaceMetodsVoltSens)mNum == InterfaceMetodsVoltSens::VoltageGet)
+		{
+			int16_t sVal = 0;
+			if (_ReceiveMetodHost->GetArgumentShort(0, sVal))
+				_CanVoltInterface1->SetVoltage(sVal);
+		}
+		break;
+	case RequestStages::VoltageSensor2:
+		if ((InterfaceMetodsVoltSens)mNum == InterfaceMetodsVoltSens::VoltageGet)
+		{
+			int16_t sVal = 0;
+			if (_ReceiveMetodHost->GetArgumentShort(0, sVal))
+				_CanVoltInterface2->SetVoltage(sVal);
+		}
+		break;
 	}
+
+
+
 	if ((EmkMetods)mNum == EmkMetods::Ping)
 	{
 	};
@@ -119,6 +209,13 @@ void Kernel::_SendPing()
 void Kernel::_SendGetCurrent()
 {
 	_SendMetodHost->InitNewMetod((uint8_t)InterfaceMetodsCurrSens::CurrentGet);
+
+	_SendData();
+}
+
+void Kernel::_SendGetVoltage()
+{
+	_SendMetodHost->InitNewMetod((uint8_t)InterfaceMetodsVoltSens::VoltageGet);
 
 	_SendData();
 }

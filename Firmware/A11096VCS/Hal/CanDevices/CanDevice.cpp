@@ -11,7 +11,7 @@
 
 CAN_HandleTypeDef* CanDevice::_hCan = 0;
 
-#define CanDeviceMaxCount 3
+#define CanDeviceMaxCount 4
 
 static CanDevice* _CanDevices[CanDeviceMaxCount] = {0};
 static int16_t _CanBusErrorCount = 0;

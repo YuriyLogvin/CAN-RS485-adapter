@@ -24,23 +24,34 @@ ReceiveBuffer::ReceiveBuffer()
 // default destructor
 ReceiveBuffer::~ReceiveBuffer()
 {
+#ifndef DEBUG
 	if (_Buff)
 		delete _Buff;
+#endif
 	_Buff = 0;
 } //~ReceiveBuffer
 
+#ifdef DEBUG
+unsigned char _ReceiveBuffer[256] = {0xff};
+#endif
+
 void ReceiveBuffer::_Init( short buffSize )
 {
+#ifndef DEBUG
 	if (_Buff)
 		delete _Buff;
 		
 	_Buff = new unsigned char[buffSize];
 	if (_Buff == 0)
 		return ;
+	_BuffSize = buffSize;
+#else
+	_Buff = _ReceiveBuffer;
+	_BuffSize = sizeof(_ReceiveBuffer);
+#endif
 		
 	_BuffPushPos = 0;
 	_BuffGetPos = 0;
-	_BuffSize = buffSize;
 	//_BuffFilledCount = 0;
 }
 

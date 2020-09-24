@@ -32,6 +32,7 @@ class Kernel : public IDataTransmitter {
 	static void _ResponseCurrent();
 	static void _ResponseInputs();
 	static void _ResponseTemperature();
+	static void _ResponseProcessCharging();
 	static void _ProcessDataPacket();
 
 public:

@@ -5,6 +5,7 @@
  *      Author: banz
  */
 
+#include <sys/_stdint.h>
 #include "Kernel.h"
 #include "Hal.h"
 #include "CanSniffer.h"
@@ -17,11 +18,13 @@
 #include "InterfaceMetodsVoltSens.h"
 #include "InterfaceMetodsLogicalInputs.h"
 #include "InterfaceMetodsTempSens.h"
+#include "InterfaceMetodsCharger.h"
 
 #include "CanDevices/CanCurtisAdapter.h"
 #include "CanDevices/CanTosAdapter.h"
 #include "CanDevices/CanCurtisAdapterSdo.h"
 #include "CanDevices/CanKellyAdapter.h"
+#include "CanDevices/ChargerSaeJ1939.h"
 
 
 Kernel* _Kernel = NULL;
@@ -56,6 +59,8 @@ CanSniffer* _CanSniffer = 0;
 
 IMotorController* _MotorControllerInterface = 0;
 
+ChargerSaeJ1939* _ChargerInterface = 0;
+
 void Kernel::Init()
 {
 	_ProtocolHost = new ProtocolHost(EmkAddr::SpeedSensor);
@@ -63,6 +68,7 @@ void Kernel::Init()
 	//_ProtocolHost->AddSelfAddr(EmkAddr::VoltageSensor);
 	_ProtocolHost->AddSelfAddr(EmkAddr::LogicalInputs);
 	_ProtocolHost->AddSelfAddr(EmkAddr::TemperatureSensor);
+	//_ProtocolHost->AddSelfAddr(EmkAddr::Charger);
 	_ProtocolHost->DestAddr(EmkAddr::Host);
 
 
@@ -92,9 +98,12 @@ void Kernel::Init()
 #endif //MODE_CURTIS_SDO
 	//
 
+	_ChargerInterface = new ChargerSaeJ1939();
+
 }
 
 int32_t _KernelTicks = 0;
+int32_t _ChargerTicks = 0;
 
 #if (MODE==MODE_SNIFFER)
 void Kernel::Tick()
@@ -120,7 +129,8 @@ void Kernel::Tick()
 	uint8_t b = 0;
 	uint8_t* data = 0;
 	uint8_t len = 0;
-	for (;Hal::UsartExt->Receive(&b, 1) > 0;)
+	//for (;Hal::UsartExt->Receive(&b, 1) > 0;)
+	for (;Hal::UsartExt->Receive(b);)
 	{
 		data = _ProtocolHost->ReceiveData(b, len);
 		if (data)
@@ -138,14 +148,20 @@ void Kernel::Tick()
 	if (Hal::GetSpendTicks(_KernelTicks) < Hal::GetTicksInMilliSecond() * 1000)
 		return;
 
-	Hal::LedBlue(!Hal::LedBlue());
+	//Hal::LedBlue(!Hal::LedBlue());
 
 	if (_MotorControllerInterface)
 	{
 		//Hal::UsartExt->Send("R:%i,C:%i,CT:%i,MT:%i\n\r", _MotorControllerInterface->Rpm(), _MotorControllerInterface->Current(), _MotorControllerInterface->TempConstroller(), _MotorControllerInterface->TempMotor());
 	}
 
-	Hal::UsartExt->Send("Hertbeat1 %i\n\r", Hal::GetTickCount());
+	if ( Hal::GetSpendTicks(_ChargerTicks) > Hal::GetTicksInSecond() * 2)
+		if (_ChargerInterface)
+		{
+			_ChargerInterface->TurnCharger(false);
+			_ChargerInterface->SetCurrent(0);
+			_ChargerInterface->SetVoltage(0);
+		}
 
 	_KernelTicks = Hal::GetTickCount();
 }
@@ -213,6 +229,37 @@ void Kernel::_ProcessDataPacket()
 		if ((InterfaceMetodsTempSens)mNum == InterfaceMetodsTempSens::TemperatureGet)
 		{
 			_ResponseTemperature();
+			break;
+		}
+		if ((EmkMetods)mNum == EmkMetods::Ping)
+		{
+			_ResponsePing();
+			break;
+		};
+		break;
+
+	case EmkAddr::Charger:
+		if (_ChargerInterface == NULL)
+			break;
+		if ((InterfaceMetodsCharger)mNum == InterfaceMetodsCharger::ProcessCharging)
+		{
+			bool boolVal = false;
+			unsigned short usVal = 0;
+			if (!_ReceiveMetodHost->GetArgumentBool(0, boolVal))
+				break;
+			_ChargerInterface->TurnCharger(boolVal);
+			if (!_ReceiveMetodHost->GetArgumentUshort(1, usVal))
+				break;
+			_ChargerInterface->SetCurrent(usVal);
+			if (!_ReceiveMetodHost->GetArgumentUshort(2, usVal))
+				break;
+			_ChargerInterface->SetVoltage(usVal);
+
+			_ChargerTicks = Hal::GetTickCount();
+			Hal::LedBlue(boolVal);
+
+			_ResponseProcessCharging();
+
 			break;
 		}
 		if ((EmkMetods)mNum == EmkMetods::Ping)
@@ -290,6 +337,19 @@ void Kernel::_ResponseTemperature()
 	_SendMetodHost->AddArgumentShort(_MotorControllerInterface->TempConstroller());
 
 	_SendMetodHost->AddArgumentShort(_MotorControllerInterface->TempMotor());
+
+	_SendData();
+}
+
+void Kernel::_ResponseProcessCharging()
+{
+	_SendMetodHost->InitNewMetod((uint8_t)InterfaceMetodsCharger::ProcessCharging);
+
+	_SendMetodHost->AddArgumentByte(_ChargerInterface->GetChargerFlags());
+
+	_SendMetodHost->AddArgumentShort(_ChargerInterface->GetCurrent());
+
+	_SendMetodHost->AddArgumentShort(_ChargerInterface->GetVoltage());
 
 	_SendData();
 }

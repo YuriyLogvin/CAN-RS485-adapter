@@ -9,7 +9,7 @@
 #define HAL_H_
 
 #include <stdint.h>
-#include "Stm32UsartDma.h"
+#include "Stm32UsartDmaIt.h"
 
 #define MODE_SNIFFER 1
 #define MODE_TOS 2
@@ -29,7 +29,7 @@ public:
 
 	static bool LedBlue();
 	static void LedBlue(bool);
-	static Stm32UsartDma* UsartExt;
+	static Stm32UsartDmaIt* UsartExt;
 
 	static int32_t GetTickCount();
 	static int32_t GetSpendTicks(int32_t fromTicks);

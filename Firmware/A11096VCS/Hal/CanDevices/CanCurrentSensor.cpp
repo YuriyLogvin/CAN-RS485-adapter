@@ -34,10 +34,8 @@ void CanCurrentSensor::OnTick()
 	_TxData[6] = 0;
 	_TxData[7] = 0;
 
-	CanDevice::Transmit();
-
-	_RequestsTicks = Hal::GetTickCount();
-
+	if (CanDevice::Transmit())
+		_RequestsTicks = Hal::GetTickCount();;
 }
 
 bool CanCurrentSensor::ProcessMess(const CAN_RxHeaderTypeDef& rxHeader, uint8_t data[])

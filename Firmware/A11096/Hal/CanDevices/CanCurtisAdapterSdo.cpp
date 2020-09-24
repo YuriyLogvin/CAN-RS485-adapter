@@ -26,8 +26,8 @@ CanCurtisAdapterSdo::CanCurtisAdapterSdo(uint8_t nodeId)
 	_Rpm = 0;
 	_Current = 0;
 	_Voltage = 0;
-	_TempConstroller = 0;
-	_TempMotor = 0;
+	_TempConstroller = -6;
+	_TempMotor = -5;
 	_ErrorMessage = false;
 
 	_Switches = 0;
