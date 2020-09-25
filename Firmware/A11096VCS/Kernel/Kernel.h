@@ -30,6 +30,7 @@ class Kernel : public IDataTransmitter {
 	static void _SendGetCurrent();
 	static void _SendGetVoltage();
 	static void _ProcessDataPacket();
+	static void _CheckSensorConnections();
 
 public:
 	Kernel() {};

@@ -75,12 +75,15 @@ enum class RequestStages
 	CurrentSensor2,
 	VoltageSensor1,
 	VoltageSensor2,
+	Size
 };
+
+int32_t _LastDataGetTime[(int32_t)RequestStages::Size] = {0};
 
 RequestStages& operator ++(RequestStages& a)
 {
 	int r = (int)a;
-	if (++r > (int)RequestStages::VoltageSensor2)
+	if (++r >= (int)RequestStages::Size)
 		r = (int)RequestStages::None;
 	return a = (RequestStages)r;
 }
@@ -115,7 +118,7 @@ void Kernel::Tick()
 	}
 
 
-	if (Hal::GetSpendTicks(_KernelTicks) < Hal::GetTicksInMilliSecond() * 1000)
+	if (Hal::GetSpendTicks(_KernelTicks) < Hal::GetTicksInMilliSecond() * 100)
 		return;
 
 	_RequestStage++;
@@ -143,7 +146,35 @@ void Kernel::Tick()
 
 	Hal::LedBlue(!Hal::LedBlue());
 
+	_CheckSensorConnections();
+
 	_KernelTicks = Hal::GetTickCount();
+}
+
+void Kernel::_CheckSensorConnections()
+{
+	if (Hal::GetSpendTicks(_LastDataGetTime[(int16_t)_RequestStage]) < Hal::GetTicksInSecond())
+		return;
+
+	switch (_RequestStage)
+	{
+	case RequestStages::CurrentSensor1:
+		_CanCurrInterface1->SetCurrent(0);
+		_CanCurrInterface1->SetTemp(0);
+		break;
+	case RequestStages::CurrentSensor2:
+		_CanCurrInterface2->SetCurrent(0);
+		_CanCurrInterface2->SetTemp(0);
+		break;
+	case RequestStages::VoltageSensor1:
+		_CanVoltInterface1->SetVoltage(0);
+		break;
+	case RequestStages::VoltageSensor2:
+		_CanVoltInterface2->SetVoltage(0);
+		break;
+	default:
+		break;
+	}
 }
 
 void Kernel::_ProcessDataPacket()
@@ -190,9 +221,11 @@ void Kernel::_ProcessDataPacket()
 				_CanVoltInterface2->SetVoltage(sVal);
 		}
 		break;
+	default:
+		break;
 	}
 
-
+	_LastDataGetTime[(int16_t)_RequestStage] = Hal::GetTickCount();
 
 	if ((EmkMetods)mNum == EmkMetods::Ping)
 	{
