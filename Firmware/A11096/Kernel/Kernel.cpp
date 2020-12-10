@@ -68,7 +68,7 @@ void Kernel::Init()
 	//_ProtocolHost->AddSelfAddr(EmkAddr::VoltageSensor);
 	_ProtocolHost->AddSelfAddr(EmkAddr::LogicalInputs);
 	_ProtocolHost->AddSelfAddr(EmkAddr::TemperatureSensor);
-	//_ProtocolHost->AddSelfAddr(EmkAddr::Charger);
+	_ProtocolHost->AddSelfAddr(EmkAddr::Charger);
 	_ProtocolHost->DestAddr(EmkAddr::Host);
 
 
@@ -119,6 +119,8 @@ void Kernel::Tick()
 	Hal::LedBlue(!Hal::LedBlue());
 
 	Hal::UsartExt->Send("Hertbeat %i\n\r", Hal::GetTickCount());
+
+
 
 	_KernelTicks = Hal::GetTickCount();
 }

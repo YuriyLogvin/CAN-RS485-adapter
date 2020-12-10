@@ -61,6 +61,12 @@ bool CanSniffer::ProcessMess(const CAN_RxHeaderTypeDef& rxHeader, uint8_t data[]
 	else
 		sprintf(buff, "%.4x : %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x\n\r", (uint16_t)rxHeader.StdId, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
 
+	if ((uint16_t)rxHeader.StdId == 0x65 || (uint16_t)rxHeader.StdId == 0x66)
+	{
+		if (data[1] == 0 && data[2] == 0)
+			sprintf(buff, "!!!! - %.4x : %.2x %.2x %.2x %.2x %.2x %.2x %.2x %.2x\n\r", (uint16_t)rxHeader.StdId, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
+	}
+
 	_DataTransmitter->Send((uint8_t*)buff, strlen(buff));
 
 	return true;

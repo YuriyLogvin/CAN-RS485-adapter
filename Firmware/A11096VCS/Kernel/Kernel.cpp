@@ -146,7 +146,8 @@ void Kernel::Tick()
 
 	Hal::LedBlue(!Hal::LedBlue());
 
-	_CheckSensorConnections();
+	//Resetted value can be sended to CAN
+	//_CheckSensorConnections();
 
 	_KernelTicks = Hal::GetTickCount();
 }
@@ -167,10 +168,12 @@ void Kernel::_CheckSensorConnections()
 		_CanCurrInterface2->SetTemp(0);
 		break;
 	case RequestStages::VoltageSensor1:
-		_CanVoltInterface1->SetVoltage(0);
+		if (_CanVoltInterface1)
+			_CanVoltInterface1->SetVoltage(0);
 		break;
 	case RequestStages::VoltageSensor2:
-		_CanVoltInterface2->SetVoltage(0);
+		if (_CanVoltInterface2)
+			_CanVoltInterface2->SetVoltage(0);
 		break;
 	default:
 		break;
@@ -210,7 +213,8 @@ void Kernel::_ProcessDataPacket()
 		{
 			int16_t sVal = 0;
 			if (_ReceiveMetodHost->GetArgumentShort(0, sVal))
-				_CanVoltInterface1->SetVoltage(sVal);
+				if (_CanVoltInterface1)
+					_CanVoltInterface1->SetVoltage(sVal);
 		}
 		break;
 	case RequestStages::VoltageSensor2:
@@ -218,7 +222,8 @@ void Kernel::_ProcessDataPacket()
 		{
 			int16_t sVal = 0;
 			if (_ReceiveMetodHost->GetArgumentShort(0, sVal))
-				_CanVoltInterface2->SetVoltage(sVal);
+				if (_CanVoltInterface2)
+					_CanVoltInterface2->SetVoltage(sVal);
 		}
 		break;
 	default:

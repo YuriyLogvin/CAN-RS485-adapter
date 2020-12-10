@@ -183,6 +183,9 @@ bool CanDevice::Transmit()
 		HAL_CAN_GetState(_hCan) != HAL_CAN_STATE_)
 		return false;*/
 
+	if (HAL_CAN_GetTxMailboxesFreeLevel(_hCan) < 1)
+		return false;
+
 	CAN_TxHeaderTypeDef txHndl;
 	txHndl.TransmitGlobalTime = DISABLE;
 	txHndl.RTR = CAN_RTR_DATA;

@@ -6,6 +6,7 @@
  */
 
 #include <CanKellyAdapter.h>
+#include "SwitchesValues.h"
 
 CanKellyAdapter::CanKellyAdapter()
 		: CanDevice(0,0,0,CanMode::Extended)
@@ -33,7 +34,13 @@ bool CanKellyAdapter::ProcessMess(const CAN_RxHeaderTypeDef& rxHeader, uint8_t d
 	{
 		_ControllerTemperature = (int16_t)-40 + data[1];
 		_MotorTemperature =  (int16_t)-30 + data[2];
-		_Switches = data[5];
+		_Switches = 0;
+		/*_Switches |= (data[4] & 0x01) ? (uint8_t)SwitchesValues::Forward : 0;
+		_Switches |= (data[4] & 0x02) ? (uint8_t)SwitchesValues::Backward : 0;
+		_Switches |= (data[5] & 0x08) ? (uint8_t)SwitchesValues::Break : 0;*/
+		_Switches |= (data[5] & 0x08) ? (uint8_t)SwitchesValues::Break : 0;
+		_Switches |= (data[5] & 0x10) ? (uint8_t)SwitchesValues::Backward : 0;
+		_Switches |= (data[5] & 0x20) ? (uint8_t)SwitchesValues::Forward : 0;
 		return true;
 	}
 
