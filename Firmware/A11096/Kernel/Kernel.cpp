@@ -25,6 +25,7 @@
 #include "CanDevices/CanCurtisAdapterSdo.h"
 #include "CanDevices/CanKellyAdapter.h"
 #include "CanDevices/ChargerSaeJ1939.h"
+#include "CanDevices/ChargerFlatPack2.h"
 
 
 Kernel* _Kernel = NULL;
@@ -35,7 +36,7 @@ SendMetodHost* _SendMetodHost;
 void BmsKernelInit()
 {
 
-#if (MODE == MODE_CURTIS_SDO)
+#if (MODE == MODE_CURTIS_SDO || MODE == MODE_FLATPACK2)
 #define canSilentMode false
 #else
 #define canSilentMode true
@@ -59,23 +60,26 @@ CanSniffer* _CanSniffer = 0;
 
 IMotorController* _MotorControllerInterface = 0;
 
-ChargerSaeJ1939* _ChargerInterface = 0;
+ICharger* _ChargerInterface = 0;
 
 void Kernel::Init()
 {
-	_ProtocolHost = new ProtocolHost(EmkAddr::SpeedSensor);
-	//_ProtocolHost->AddSelfAddr(EmkAddr::CurrentSensor);
-	//_ProtocolHost->AddSelfAddr(EmkAddr::VoltageSensor);
-	_ProtocolHost->AddSelfAddr(EmkAddr::LogicalInputs);
-	_ProtocolHost->AddSelfAddr(EmkAddr::TemperatureSensor);
-	_ProtocolHost->AddSelfAddr(EmkAddr::Charger);
-	_ProtocolHost->DestAddr(EmkAddr::Host);
 
+	bool interfaceSpeedSensor = false;
+	bool interfaceLogicalInputs = false;
+	bool interfaceTemperatureSensor = false;
+	bool interfaceCharger = false;
 
-	_ReceiveMetodHost = new ReceiveMetodHost();
-
-	_SendMetodHost = new SendMetodHost();
-
+#if (MODE == MODE_FLATPACK2)
+	//This mode does not support ControllerInterface
+	interfaceCharger = true;
+	_ChargerInterface = new ChargerFlatPack2();
+#else
+	interfaceSpeedSensor = true;
+	interfaceLogicalInputs = true;
+	interfaceTemperatureSensor = true;
+	interfaceCharger = true;
+	_ChargerInterface = new ChargerSaeJ1939();
 #if (MODE == MODE_CURTIS_SDO)
 	_MotorControllerInterface = new CanCurtisAdapterSdo(38);
 #else
@@ -96,9 +100,27 @@ void Kernel::Init()
 #endif //MODE_TOS
 #endif //MODE_CURTIS_PDO
 #endif //MODE_CURTIS_SDO
+#endif //MODE_FLATPACK2
 	//
 
-	_ChargerInterface = new ChargerSaeJ1939();
+	if (interfaceSpeedSensor)
+		_ProtocolHost = new ProtocolHost(EmkAddr::SpeedSensor);
+	//_ProtocolHost->AddSelfAddr(EmkAddr::CurrentSensor);
+	//_ProtocolHost->AddSelfAddr(EmkAddr::VoltageSensor);
+	if (interfaceLogicalInputs)
+		_ProtocolHost->AddSelfAddr(EmkAddr::LogicalInputs);
+	if (interfaceTemperatureSensor)
+		_ProtocolHost->AddSelfAddr(EmkAddr::TemperatureSensor);
+	if (interfaceCharger)
+		_ProtocolHost->AddSelfAddr(EmkAddr::Charger);
+
+	_ProtocolHost->DestAddr(EmkAddr::Host);
+
+
+	_ReceiveMetodHost = new ReceiveMetodHost();
+
+	_SendMetodHost = new SendMetodHost();
+
 
 }
 
@@ -163,6 +185,7 @@ void Kernel::Tick()
 			_ChargerInterface->TurnCharger(false);
 			_ChargerInterface->SetCurrent(0);
 			_ChargerInterface->SetVoltage(0);
+			_ChargerInterface->SetOverVoltage(0);
 		}
 
 	_KernelTicks = Hal::GetTickCount();
@@ -256,6 +279,9 @@ void Kernel::_ProcessDataPacket()
 			if (!_ReceiveMetodHost->GetArgumentUshort(2, usVal))
 				break;
 			_ChargerInterface->SetVoltage(usVal);
+
+			if (_ReceiveMetodHost->GetArgumentUshort(3, usVal))
+				_ChargerInterface->SetOverVoltage(usVal);
 
 			_ChargerTicks = Hal::GetTickCount();
 			Hal::LedBlue(boolVal);

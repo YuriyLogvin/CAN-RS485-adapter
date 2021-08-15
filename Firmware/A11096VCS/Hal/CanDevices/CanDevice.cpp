@@ -11,7 +11,7 @@
 
 CAN_HandleTypeDef* CanDevice::_hCan = 0;
 
-#define CanDeviceMaxCount 4
+#define CanDeviceMaxCount 5
 
 static CanDevice* _CanDevices[CanDeviceMaxCount] = {0};
 static int16_t _CanBusErrorCount = 0;
@@ -45,6 +45,8 @@ CanDevice::CanDevice(uint32_t extIdFilter, uint32_t idDest, uint16_t recieveTime
 
 	_RxStdId = 0;
 	_RxExtId = 0;
+
+	_Enable = true;
 
 	memset(_TxData, 0, sizeof(_TxData));
 

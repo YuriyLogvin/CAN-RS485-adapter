@@ -9,8 +9,9 @@
 #define CANDEVICES_CHARGERSAEJ1939_H_
 
 #include "CanDevice.h"
+#include "ICharger.h"
 
-class ChargerSaeJ1939 : public CanDevice {
+class ChargerSaeJ1939 : public CanDevice, public ICharger {
 	uint16_t _VoltageNeed;
 	uint16_t _CurrentNeed;
 	uint16_t _VoltageHave;
@@ -23,15 +24,17 @@ public:
 	ChargerSaeJ1939();
 	virtual ~ChargerSaeJ1939();
 
-	void SetVoltage(uint16_t);
-	uint16_t GetVoltage();
+	virtual void SetVoltage(uint16_t) override;
+	virtual uint16_t GetVoltage() override;
 
-	void SetCurrent(uint16_t);
-	uint16_t GetCurrent();
+	virtual void SetOverVoltage(uint16_t val) override;
 
-	uint8_t GetChargerFlags();
+	virtual void SetCurrent(uint16_t) override;
+	virtual uint16_t GetCurrent() override;
 
-	void TurnCharger(bool value);
+	virtual uint8_t GetChargerFlags() override;
+
+	virtual void TurnCharger(bool value) override;
 
 protected:
 	virtual bool ProcessMess(const CAN_RxHeaderTypeDef& rxHeader, uint8_t data[]);

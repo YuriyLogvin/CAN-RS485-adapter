@@ -53,7 +53,6 @@ public:
 	static void Init(CAN_HandleTypeDef* hCan, Speeds speed, bool silentMode);
 	static void Tick();
 
-
 protected:
 	uint32_t _IdDest;
 	CanMode _CanMode;
@@ -62,6 +61,7 @@ protected:
 	uint32_t 		_RxExtId;
 	uint32_t 		_RxStdId;
 	int32_t _LastReceivingTime;
+	bool _Enable;
 
 	bool Transmit();
 
@@ -71,6 +71,9 @@ protected:
 	virtual void OnTick();
 
 	void _Reinit();
+
+public:
+	void Enable(bool val) {_Enable = val;};
 
 };
 

@@ -67,6 +67,10 @@ uint16_t ChargerSaeJ1939::GetVoltage()
 	return _VoltageHave;
 }
 
+void ChargerSaeJ1939::SetOverVoltage(uint16_t val)
+{
+}
+
 void ChargerSaeJ1939::SetCurrent(uint16_t val)
 {
 	_CurrentNeed = val;

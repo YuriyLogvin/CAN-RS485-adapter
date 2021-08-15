@@ -23,6 +23,9 @@ void CanVoltageSensor::OnTick()
 	if (Hal::GetSpendTicks(_RequestsTicks) < Hal::GetTicksInMilliSecond() * 50)
 		return;
 
+	if (!_Enable)
+		return;
+
 	_TxData[0] = 0;
 	_TxData[1] = (uint8_t)_Voltage;
 	_TxData[2] = (uint16_t)_Voltage >> 8;
@@ -46,7 +49,7 @@ bool CanVoltageSensor::ProcessMess(const CAN_RxHeaderTypeDef& rxHeader, uint8_t 
 		return true;
 	}*/
 
-	return true;
+	return false;
 }
 
 

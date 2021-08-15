@@ -168,7 +168,7 @@ void CanDevice::Tick()
 
 
 
-bool CanDevice::Transmit()
+bool CanDevice::Transmit(uint8_t dataLen)
 {
 
 	/*if (!sendImmediately)
@@ -186,7 +186,7 @@ bool CanDevice::Transmit()
 	CAN_TxHeaderTypeDef txHndl;
 	txHndl.TransmitGlobalTime = DISABLE;
 	txHndl.RTR = CAN_RTR_DATA;
-	txHndl.DLC = 8;
+	txHndl.DLC = dataLen;
 
 	if (_CanMode == CanMode::Extended)
 	{

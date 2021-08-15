@@ -20,11 +20,16 @@
 
 #include <CanCurrentSensor.h>
 #include <CanVoltageSensor.h>
+#include <CanHeartBeat.h>
+
+/*VCS -> CAN adapter for Rs485 voltage + current sensors*/
 
 Kernel* _Kernel = NULL;
 ProtocolHost* _ProtocolHost;
 ReceiveMetodHost* _ReceiveMetodHost;
 SendMetodHost* _SendMetodHost;
+
+uint8_t _DetectedDevices = 0;
 
 void BmsKernelInit()
 {
@@ -49,6 +54,7 @@ CanCurrentSensor* _CanCurrInterface1 = 0;
 CanCurrentSensor* _CanCurrInterface2 = 0;
 CanVoltageSensor* _CanVoltInterface1 = 0;
 CanVoltageSensor* _CanVoltInterface2 = 0;
+CanHeartBeat* _CanHeartBeat = 0;
 
 void Kernel::Init()
 {
@@ -64,6 +70,8 @@ void Kernel::Init()
 
 	_CanVoltInterface1 = new CanVoltageSensor(111);
 	_CanVoltInterface2 = new CanVoltageSensor(112);
+
+	_CanHeartBeat = new CanHeartBeat(100);
 }
 
 int32_t _KernelTicks = 0;
@@ -121,10 +129,15 @@ void Kernel::Tick()
 	if (Hal::GetSpendTicks(_KernelTicks) < Hal::GetTicksInMilliSecond() * 100)
 		return;
 
+	//Resetted value can be sended to CAN
+	_CheckSensorConnections();
+
 	_RequestStage++;
 	switch (_RequestStage)
 	{
 	case RequestStages::CurrentSensor1:
+		if (_CanHeartBeat)
+			_CanHeartBeat->SetFlags(_DetectedDevices);
 		_ProtocolHost->DestAddr(EmkAddr::CurrentSensor);
 		_SendGetCurrent();
 		break;
@@ -146,9 +159,6 @@ void Kernel::Tick()
 
 	Hal::LedBlue(!Hal::LedBlue());
 
-	//Resetted value can be sended to CAN
-	//_CheckSensorConnections();
-
 	_KernelTicks = Hal::GetTickCount();
 }
 
@@ -160,20 +170,38 @@ void Kernel::_CheckSensorConnections()
 	switch (_RequestStage)
 	{
 	case RequestStages::CurrentSensor1:
-		_CanCurrInterface1->SetCurrent(0);
-		_CanCurrInterface1->SetTemp(0);
+		_DetectedDevices &= ~0x1;
+		if (_CanCurrInterface1)
+		{
+			_CanCurrInterface1->Enable(false);
+			//_CanCurrInterface1->SetCurrent(0);
+			//_CanCurrInterface1->SetTemp(0);
+		}
 		break;
 	case RequestStages::CurrentSensor2:
-		_CanCurrInterface2->SetCurrent(0);
-		_CanCurrInterface2->SetTemp(0);
+		_DetectedDevices &= ~0x2;
+		if (_CanCurrInterface2)
+		{
+			_CanCurrInterface2->Enable(false);
+			//_CanCurrInterface2->SetCurrent(0);
+			//_CanCurrInterface2->SetTemp(0);
+		}
 		break;
 	case RequestStages::VoltageSensor1:
+		_DetectedDevices &= ~0x10;
 		if (_CanVoltInterface1)
-			_CanVoltInterface1->SetVoltage(0);
+		{
+			_CanVoltInterface1->Enable(false);
+			//_CanVoltInterface1->SetVoltage(0);
+		}
 		break;
 	case RequestStages::VoltageSensor2:
+		_DetectedDevices &= ~0x20;
 		if (_CanVoltInterface2)
-			_CanVoltInterface2->SetVoltage(0);
+		{
+			_CanVoltInterface2->Enable(false);
+			//_CanVoltInterface2->SetVoltage(0);
+		}
 		break;
 	default:
 		break;
@@ -195,9 +223,17 @@ void Kernel::_ProcessDataPacket()
 				break;
 
 			if (_RequestStage == RequestStages::CurrentSensor1)
+			{
+				_DetectedDevices |= 0x1;
+				_CanCurrInterface1->Enable(true);
 				_CanCurrInterface1->SetCurrent(sVal);
+			}
 			else
+			{
+				_DetectedDevices |= 0x2;
+				_CanCurrInterface2->Enable(true);
 				_CanCurrInterface2->SetCurrent(sVal);
+			}
 
 			if (!_ReceiveMetodHost->GetArgumentShort(1, sVal))
 				break;
@@ -213,8 +249,14 @@ void Kernel::_ProcessDataPacket()
 		{
 			int16_t sVal = 0;
 			if (_ReceiveMetodHost->GetArgumentShort(0, sVal))
+			{
+				_DetectedDevices |= 0x10;
 				if (_CanVoltInterface1)
+				{
+					_CanVoltInterface1->Enable(true);
 					_CanVoltInterface1->SetVoltage(sVal);
+				}
+			}
 		}
 		break;
 	case RequestStages::VoltageSensor2:
@@ -222,8 +264,14 @@ void Kernel::_ProcessDataPacket()
 		{
 			int16_t sVal = 0;
 			if (_ReceiveMetodHost->GetArgumentShort(0, sVal))
+			{
+				_DetectedDevices |= 0x20;
 				if (_CanVoltInterface2)
+				{
+					_CanVoltInterface2->Enable(true);
 					_CanVoltInterface2->SetVoltage(sVal);
+				}
+			}
 		}
 		break;
 	default:

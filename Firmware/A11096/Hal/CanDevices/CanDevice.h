@@ -63,7 +63,7 @@ protected:
 	uint32_t 		_RxStdId;
 	int32_t _LastReceivingTime;
 
-	bool Transmit();
+	bool Transmit(uint8_t dataLen = 8);
 
 	CanDeviceStates _GetState();
 
