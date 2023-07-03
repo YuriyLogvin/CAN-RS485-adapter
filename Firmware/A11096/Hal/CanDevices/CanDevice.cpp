@@ -37,8 +37,7 @@ CanDevice::CanDevice(uint32_t extIdFilter, uint32_t idDest, uint16_t recieveTime
 	_ExtIdFilter = extIdFilter;
 	_IdDest = idDest;
 	_RecieveTimeoutMs = recieveTimeoutMs;
-	_Ticks = Hal::GetTickCount();
-	_LastReceivingTime = 0;
+	_LastRcvdPacketTicks = 0;
 	_CanDeviceState = cdsNone;
 
 	_CanMode = canMode;
@@ -151,7 +150,11 @@ void CanDevice::Tick()
 		{
 			if (_CanDevices[i] == 0)
 				continue;
-			_CanDevices[i]->ProcessMess(rxHeader, rxData);
+			if (_CanDevices[i]->ProcessMess(rxHeader, rxData))
+			{
+				_CanDevices[i]->_LastRcvdPacketTicks = Hal::GetTickCount();
+				break;
+			}
 		};
 
 		return;
@@ -256,69 +259,12 @@ void CanDevice::ResetErrors()
 	_CanBusErrorCount = 0;
 }
 
-
-/*void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan)
+bool CanDevice::IsOnline()
 {
-
-	//if (_hCan->ErrorCode != 0)
-	//{
-	for (int8_t i = 0; i < CanDeviceMaxCount; i++)
-	{
-		if (_CanDevices[i] == 0)
-			continue;
-		_CanDevices[i]->_CanDeviceState = cdsBusError;
-	}
-
-	_CanBusErrorCount++;
-
-	_CanBusErrorBits |= hcan->ErrorCode;
-
+	if (_LastRcvdPacketTicks == 0)
+		return false;
+	if (Hal::GetSpendTicks(_LastRcvdPacketTicks) >= _RecieveTimeoutMs * Hal::GetTicksInMilliSecond())
+		return false;
+	return true;
 }
 
-
-void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan)
-{
-
-	_ReceivedPackets++;
-
-	for (int8_t i = 0; i < CanDeviceMaxCount; i++)
-	{
-		if (_CanDevices[i] == 0)
-			continue;
-		if (_CanDevices[i]->_ExtIdFilter != 0)
-		{ //Если девайс ловит один пакет
-			if (hcan->pRxMsg->ExtId)
-			{
-				if (_CanDevices[i]->_ExtIdFilter != hcan->pRxMsg->ExtId)
-					continue;
-			}
-			else
-				if (_CanDevices[i]->_ExtIdFilter != hcan->pRxMsg->StdId)
-					continue;
-		}
-		else
-		{ //Если девайс ловит много пакетов
-			uint32_t pId = hcan->pRxMsg->ExtId ? hcan->pRxMsg->ExtId : hcan->pRxMsg->StdId;
-			if (!_CanDevices[i]->ProcessMessId(pId, hcan->pRxMsg->Data))
-				continue;
-
-			if (hcan->pRxMsg->ExtId)
-				_CanDevices[i]->_RxExtId = pId;
-			else
-				_CanDevices[i]->_RxStdId = pId;
-		}
-
-		if (!_CanDevices[i]->_RxDataLock)
-		{
-			_CanDevices[i]->_RxDataLock = true;
-			memcpy(_CanDevices[i]->_RxData, hcan->pRxMsg->Data, sizeof(_CanDevices[i]->_RxData));
-			_CanDevices[i]->_RxDataLock = false;
-		}
-
-		_CanDevices[i]->_LastReceivingTime = Hal::GetTickCount();
-		_CanDevices[i]->_CanDeviceState = cdsWorking;
-	}
-
-
-	HAL_CAN_Receive_IT(hcan, CAN_FIFO0);
-}*/

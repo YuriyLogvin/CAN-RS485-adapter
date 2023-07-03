@@ -1,25 +1,18 @@
 /*
  * ChargerFlatPack2.cpp
  *
- *  Created on: 7 ρεπο. 2021 π.
+ *  Created on: 11 ρεπο. 2021 π.
  *      Author: banz
  */
 
-#include <ChargerFlatPack2.h>
+#include <CanDevices/ChargerFlatPack2.h>
 #include "Hal.h"
-#include <string.h>
+#include "string.h"
 
 ChargerFlatPack2::ChargerFlatPack2()
-	: CanDevice(0,0,0,CanMode::Extended)
+	: CanDevice(0,0,2000,CanMode::Extended),
+	  ICharger()
 {
-	_VoltageNeed = 0;
-	_CurrentNeed = 0;
-	_VoltageHave = 0;
-	_CurrentHave = 0;
-	_ChargerFlags = 0;
-	_ChargerEnable = false;
-	_VoltageOver = 0;
-
 	_TransmitState = CanTransmitStates::None;
 	_LastReceiving = 0;
 	_TransmitTicker = 0;
@@ -35,68 +28,6 @@ ChargerFlatPack2::~ChargerFlatPack2() {
 	// TODO Auto-generated destructor stub
 }
 
-bool ChargerFlatPack2::ProcessMess(const CAN_RxHeaderTypeDef& rxHeader, uint8_t data[])
-{
-	auto messId = rxHeader.ExtId;
-
-	if ((messId & 0xffff0000) == 0x05000000)
-	{ //MSG CAN hello packet, 0x0500XXXX
-		_LastReceiving = Hal::GetTickCount();
-		int8_t i = 0;
-		bool detected = false;
-		for(; i < MaxContChargerFlatPack; i++)
-		{
-			if (_DetectedFlatPack2[i].Id == 0)
-				break;
-			if (memcmp(((uint8_t*)&(_DetectedFlatPack2[i].Id))+1, data+1, 6)==0)
-			{
-				detected = true;
-				break;
-			}
-		}
-		if (i < MaxContChargerFlatPack && !detected)
-		{
-			_TransmitState = CanTransmitStates::SendLogin;
-			_DetectedFlatPack2[i].Id = *((uint64_t*)data);
-		}
-
-		return true;
-		//return false;
-	}
-
-	if ((messId & 0xff00ffff) == 0x05004400)
-	{ //MSG Login request / start-up notification, 0x05XX4400
-		uint8_t id = (uint8_t)(messId >> 16) - 1;
-		if (id >= MaxContChargerFlatPack)
-			return false;
-		if (memcmp(((uint8_t*)&(_DetectedFlatPack2[id].Id))+1, data, 6)!=0)
-			return false;
-		_DetectedFlatPack2[id].LoggedIn = false;
-		_DetectedFlatPack2[id].CheckedDefaultVoltage = false;
-		//return true;
-		return false;
-	}
-
-	if ((messId & 0xff00ff00) == 0x05004000)
-	{ //MSG Status, 0x05XX40YY
-		uint8_t id = (uint8_t)(messId >> 16) - 1;
-		if (id >= MaxContChargerFlatPack)
-			return false;
-		if (_DetectedFlatPack2[id].Id == 0)
-			return false;
-		_DetectedFlatPack2[id].IntakeTemp = data[0];
-		_DetectedFlatPack2[id].CurrentOut = (data[1] << 8)  | data[2];
-		_DetectedFlatPack2[id].VoltageOut = (data[3] << 8)  | data[4];
-		_DetectedFlatPack2[id].VoltageInp = (data[5] << 8)  | data[6];
-		_DetectedFlatPack2[id].ExhaustTemp = data[7];
-
-		//return true;
-		return false;
-	}
-
-	return false;
-
-}
 
 void ChargerFlatPack2::OnTick()
 {
@@ -168,8 +99,8 @@ void ChargerFlatPack2::OnTick()
 		_TxData[0] = 0x29;
 		_TxData[1] = 0x15;
 		_TxData[2] = 0;
-		_TxData[3] = (_VoltageNeed / 10);
-		_TxData[4] = (_VoltageNeed / 10) >> 8;
+		_TxData[3] = (_VoltageNeed * 10);
+		_TxData[4] = (_VoltageNeed * 10) >> 8;
 		_TxData[5] = 0;
 		_TxData[6] = 0;
 		_TxData[7] = 0;
@@ -177,9 +108,11 @@ void ChargerFlatPack2::OnTick()
 		_IdDest = 0x05009C00;
 		_IdDest |= (_ActiveCharger + 1) << 16;
 		if (CanDevice::Transmit(5))
+		{
 			_DetectedFlatPack2[_ActiveCharger].CheckedDefaultVoltage = true;
-
-		_TransmitState = CanTransmitStates::SendLogin;
+			//_TransmitState = CanTransmitStates::SendLogin;
+			_TransmitState = CanTransmitStates::SendVClimits;
+		}
 
 		break;
 
@@ -196,9 +129,9 @@ void ChargerFlatPack2::OnTick()
 		}
 
 		{
-			uint16_t curr = _CurrentNeed / 100;
-			uint16_t volt = _VoltageNeed / 10;
-			uint16_t voltOvp = _VoltageOver / 10;
+			uint16_t curr = _CurrentNeed;
+			uint16_t volt = _VoltageNeed * 10;
+			uint16_t voltOvp = _VoltageOver * 10;
 
 			if (!_ChargerEnable)
 			{
@@ -233,41 +166,67 @@ void ChargerFlatPack2::OnTick()
 
 }
 
-
-
-void ChargerFlatPack2::SetVoltage(uint16_t val)
+bool ChargerFlatPack2::ProcessMess(const CAN_RxHeaderTypeDef& rxHeader, uint8_t data[])
 {
-	_VoltageNeed = val;
+	auto messId = rxHeader.ExtId;
+
+	if ((messId & 0xffff0000) == 0x05000000)
+	{ //MSG CAN hello packet, 0x0500XXXX
+		_LastReceiving = Hal::GetTickCount();
+		int8_t i = 0;
+		bool detected = false;
+		for(; i < MaxContChargerFlatPack; i++)
+		{
+			if (_DetectedFlatPack2[i].Id == 0)
+				break;
+			if (memcmp(((uint8_t*)&(_DetectedFlatPack2[i].Id))+1, data+1, 6)==0)
+			{
+				detected = true;
+				break;
+			}
+		}
+		if (i < MaxContChargerFlatPack && !detected)
+		{
+			_TransmitState = CanTransmitStates::SendLogin;
+			_DetectedFlatPack2[i].Id = *((uint64_t*)data);
+		}
+
+		return true;
+	}
+
+	if ((messId & 0xff00ffff) == 0x05004400)
+	{ //MSG Login request / start-up notification, 0x05XX4400
+		uint8_t id = (uint8_t)(messId >> 16) - 1;
+		if (id >= MaxContChargerFlatPack)
+			return false;
+		if (memcmp(((uint8_t*)&(_DetectedFlatPack2[id].Id))+1, data, 6)!=0)
+			return false;
+		_DetectedFlatPack2[id].LoggedIn = false;
+		_DetectedFlatPack2[id].CheckedDefaultVoltage = false;
+		return true;
+	}
+
+	if ((messId & 0xff00ff00) == 0x05004000)
+	{ //MSG Status, 0x05XX40YY
+		uint8_t id = (uint8_t)(messId >> 16) - 1;
+		if (id >= MaxContChargerFlatPack)
+			return false;
+		if (_DetectedFlatPack2[id].Id == 0)
+			return false;
+		_DetectedFlatPack2[id].IntakeTemp = data[0];
+		_DetectedFlatPack2[id].CurrentOut = (data[1] << 8)  | data[2];
+		_DetectedFlatPack2[id].VoltageOut = (data[3] << 8)  | data[4];
+		_DetectedFlatPack2[id].VoltageInp = (data[5] << 8)  | data[6];
+		_DetectedFlatPack2[id].ExhaustTemp = data[7];
+
+		return true;
+	}
+
+	return false;
 }
 
-uint16_t ChargerFlatPack2::GetVoltage()
+bool ChargerFlatPack2::IsOnline()
 {
-	return _VoltageHave;
+	return CanDevice::IsOnline();
 }
-
-void ChargerFlatPack2::SetOverVoltage(uint16_t val)
-{
-	_VoltageOver = val;
-}
-
-void ChargerFlatPack2::SetCurrent(uint16_t val)
-{
-	_CurrentNeed = val;
-}
-
-uint16_t ChargerFlatPack2::GetCurrent()
-{
-	return _CurrentHave;
-}
-
-uint8_t ChargerFlatPack2::GetChargerFlags()
-{
-	return _ChargerFlags;
-}
-
-void ChargerFlatPack2::TurnCharger(bool value)
-{
-	_ChargerEnable = value;
-}
-
 

@@ -22,7 +22,7 @@ CanHeartBeat::~CanHeartBeat() {
 
 void CanHeartBeat::OnTick()
 {
-	if (Hal::GetSpendTicks(_RequestsTicks) < Hal::GetTicksInMilliSecond() * 500)
+	if (Hal::GetSpendTicks(_RequestsTicks) < Hal::GetTicksInMilliSecond() * 50)
 		return;
 
 	_TxData[0] = _Flags;

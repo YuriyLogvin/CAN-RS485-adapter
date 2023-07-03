@@ -1,0 +1,92 @@
+
+F:\Works\GitHub\CAN-RS485-adapter\Firmware\A11096BootLoader>"C:\Program Files (x86)\STMicroelectronics\STM32 ST-LINK Utility\ST-LINK Utility\ST-LINK_CLI.exe" -c SWD UR -OB RDP=0 WRP=0xFFFFFFFF -ME 
+STM32 ST-LINK CLI v3.2.0.0
+STM32 ST-LINK Command Line Interface
+
+ST-LINK SN : Old ST-LINK firmware/ST-LINK already used
+ST-LINK Firmware version : V2J17S4 (Need Update)
+Old ST-LINK firmware detected!
+Please upgrade it from ST-LINK->'Firmware update' menu.
+Connected via SWD.
+Target voltage = 3.3 V.
+Connection mode : Connect Under Reset.
+Device ID:0x410 
+Device family :STM32F10xx Medium-density
+
+Updating option bytes...
+Option bytes updated successfully.
+
+Full chip erase...
+Flash memory erased.
+
+
+F:\Works\GitHub\CAN-RS485-adapter\Firmware\A11096BootLoader>"C:\Program Files (x86)\STMicroelectronics\STM32 ST-LINK Utility\ST-LINK Utility\ST-LINK_CLI.exe" -c SWD -V -P .\WorkingBootLoader\A11096BootLoader.bin 0x08000000 
+STM32 ST-LINK CLI v3.2.0.0
+STM32 ST-LINK Command Line Interface
+
+ST-LINK SN : Old ST-LINK firmware/ST-LINK already used
+ST-LINK Firmware version : V2J17S4 (Need Update)
+Old ST-LINK firmware detected!
+Please upgrade it from ST-LINK->'Firmware update' menu.
+Connected via SWD.
+Target voltage = 3.3 V.
+Connection mode : Normal.
+Device ID:0x410 
+Device flash Size : 64 Kbytes
+Device family :STM32F10xx Medium-density
+
+
+Loading file...
+Flash Programming:
+  File : .\WorkingBootLoader\A11096BootLoader.bin
+  Address : 0x08000000
+Memory programming...
+北北北北北北北北北北北北北北北北北北北北北北北北北 0% 0%圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹圹 100%
+Memory programmed in 1s and 497ms.
+Verification...OK
+Programming Complete.
+Programmed memory Checksum: 0x000B0783
+
+
+F:\Works\GitHub\CAN-RS485-adapter\Firmware\A11096BootLoader>"C:\Program Files (x86)\STMicroelectronics\STM32 ST-LINK Utility\ST-LINK Utility\ST-LINK_CLI.exe" -c -OB RDP=1 WRP=0xFFFFFFF0 
+STM32 ST-LINK CLI v3.2.0.0
+STM32 ST-LINK Command Line Interface
+
+ST-LINK SN : Old ST-LINK firmware/ST-LINK already used
+ST-LINK Firmware version : V2J17S4 (Need Update)
+Old ST-LINK firmware detected!
+Please upgrade it from ST-LINK->'Firmware update' menu.
+Connected via SWD.
+Target voltage = 3.3 V.
+Connection mode : Normal.
+Device ID:0x410 
+Device flash Size : 64 Kbytes
+Device family :STM32F10xx Medium-density
+
+Updating option bytes...
+Option bytes updated successfully.
+
+
+F:\Works\GitHub\CAN-RS485-adapter\Firmware\A11096BootLoader>"C:\Program Files (x86)\STMicroelectronics\STM32 ST-LINK Utility\ST-LINK Utility\ST-LINK_CLI.exe" -c SWD UR -rOB 
+STM32 ST-LINK CLI v3.2.0.0
+STM32 ST-LINK Command Line Interface
+
+ST-LINK SN : Old ST-LINK firmware/ST-LINK already used
+ST-LINK Firmware version : V2J17S4 (Need Update)
+Old ST-LINK firmware detected!
+Please upgrade it from ST-LINK->'Firmware update' menu.
+Connected via SWD.
+Target voltage = 3.3 V.
+Connection mode : Connect Under Reset.
+Device ID:0x410 
+Device family :STM32F10xx Medium-density
+
+Option bytes:
+RDP             : ENABLED
+IWDG_SW         : 1
+nRST_STOP       : 1
+nRST_STDBY      : 1
+Data0           : 0xFF
+Data1           : 0xFF
+WRP             : 0xFFFFFFF0
+

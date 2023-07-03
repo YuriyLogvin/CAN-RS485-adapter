@@ -99,7 +99,10 @@ bool Stm32UsartDmaIt::Send(const char* format, ...)
 	va_end(args);
 
 	if (_TxEnPort)
+	{
+		_InTxMode = true;
 		HAL_GPIO_WritePin(_TxEnPort, _TxEnPin, GPIO_PIN_SET);
+	}
 
 	HAL_UART_Transmit_DMA(_Huart, _UsartSendBuff, strlen((char*)_UsartSendBuff));
 

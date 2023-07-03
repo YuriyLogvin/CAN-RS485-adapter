@@ -35,7 +35,8 @@ CanCurtisAdapterSdo::CanCurtisAdapterSdo(uint8_t nodeId)
 
 void CanCurtisAdapterSdo::OnTick()
 {
-	if (Hal::GetSpendTicks(_RequestsTicks) < Hal::GetTicksInMilliSecond() * 50)
+	//if (Hal::GetSpendTicks(_RequestsTicks) < Hal::GetTicksInMilliSecond() * 50)
+	if (Hal::GetSpendTicks(_RequestsTicks) < Hal::GetTicksInMilliSecond() * 1)
 		return;
 
 	switch (_RequestsState)

@@ -35,13 +35,21 @@ class Kernel : public IDataTransmitter {
 	static void _ResponseProcessCharging();
 	static void _ProcessDataPacket();
 
+	static bool _ProcessChilling();
+	static void _ResponseChilling();
+
+	static bool _ProcessRequestExtBmsGetParam();
+
+	static bool _ProcessRequestCanEmulator();
+
 public:
 	Kernel() {};
 
 	static void Init();
 	static void Tick();
 
-	virtual void Send(uint8_t* data, uint16_t len);
+	virtual bool Send(uint8_t* data, uint16_t len);
+	virtual bool IsBusy();
 };
 
 #endif //#ifdef __cplusplus

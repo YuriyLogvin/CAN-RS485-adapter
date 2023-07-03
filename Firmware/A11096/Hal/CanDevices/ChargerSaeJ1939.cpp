@@ -5,19 +5,13 @@
  *      Author: banz
  */
 
-#include <ChargerSaeJ1939.h>
+#include <CanDevices/ChargerSaeJ1939.h>
 #include "Hal.h"
 
 ChargerSaeJ1939::ChargerSaeJ1939()
-	: CanDevice(0,0,0,CanMode::Extended)
+	: CanDevice(0,0,1000,CanMode::Extended),
+	ICharger()
 {
-	_VoltageNeed = 0;
-	_CurrentNeed = 0;
-	_VoltageHave = 0;
-	_CurrentHave = 0;
-	_ChargerFlags = 0;
-	_ChargerEnable = false;
-	_RequestsTicks = 0;
 }
 
 
@@ -57,37 +51,7 @@ bool ChargerSaeJ1939::ProcessMess(const CAN_RxHeaderTypeDef& rxHeader, uint8_t d
 	return true;
 }
 
-void ChargerSaeJ1939::SetVoltage(uint16_t val)
+bool ChargerSaeJ1939::IsOnline()
 {
-	_VoltageNeed = val;
+	return CanDevice::IsOnline();
 }
-
-uint16_t ChargerSaeJ1939::GetVoltage()
-{
-	return _VoltageHave;
-}
-
-void ChargerSaeJ1939::SetOverVoltage(uint16_t val)
-{
-}
-
-void ChargerSaeJ1939::SetCurrent(uint16_t val)
-{
-	_CurrentNeed = val;
-}
-
-uint16_t ChargerSaeJ1939::GetCurrent()
-{
-	return _CurrentHave;
-}
-
-uint8_t ChargerSaeJ1939::GetChargerFlags()
-{
-	return _ChargerFlags;
-}
-
-void ChargerSaeJ1939::TurnCharger(bool value)
-{
-	_ChargerEnable = value;
-}
-

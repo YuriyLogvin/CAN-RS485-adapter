@@ -66,7 +66,18 @@ void Error_Handler(void);
 #define CAN_EN_GPIO_Port GPIOB
 #define RS485_EN_Pin GPIO_PIN_15
 #define RS485_EN_GPIO_Port GPIOB
+#define SW1_Pin GPIO_PIN_5
+#define SW1_GPIO_Port GPIOB
+#define SW2_Pin GPIO_PIN_6
+#define SW2_GPIO_Port GPIOB
+#define SW3_Pin GPIO_PIN_7
+#define SW3_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
+
+#ifdef DEBUG
+#define MODE MODE_EMULATOR
+//MODE_EXT_BMS
+#endif
 
 /* USER CODE END Private defines */
 

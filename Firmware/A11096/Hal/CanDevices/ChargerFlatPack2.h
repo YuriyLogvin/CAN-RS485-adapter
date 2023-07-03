@@ -1,7 +1,7 @@
 /*
  * ChargerFlatPack2.h
  *
- *  Created on: 7 ρεπο. 2021 π.
+ *  Created on: 11 ρεπο. 2021 π.
  *      Author: banz
  */
 
@@ -9,19 +9,11 @@
 #define CANDEVICES_CHARGERFLATPACK2_H_
 
 #include "CanDevice.h"
-#include "ICharger.h"
+#include "CanDevices/ICharger.h"
 
 #define MaxContChargerFlatPack 3
 
 class ChargerFlatPack2 : public CanDevice, public ICharger {
-	uint16_t _VoltageNeed;
-	uint16_t _CurrentNeed;
-	uint16_t _VoltageHave;
-	uint16_t _CurrentHave;
-	uint16_t _VoltageOver;
-	uint8_t _ChargerFlags;
-	uint8_t _ChargerEnable;
-
 	enum class CanTransmitStates
 	{
 		None,
@@ -56,23 +48,11 @@ class ChargerFlatPack2 : public CanDevice, public ICharger {
 public:
 	ChargerFlatPack2();
 	virtual ~ChargerFlatPack2();
-
-	virtual void SetVoltage(uint16_t) override;
-	virtual uint16_t GetVoltage() override;
-
-	virtual void SetOverVoltage(uint16_t val) override;
-
-	virtual void SetCurrent(uint16_t) override;
-	virtual uint16_t GetCurrent() override;
-
-	virtual uint8_t GetChargerFlags() override;
-
-	virtual void TurnCharger(bool value) override;
-
 protected:
 	virtual bool ProcessMess(const CAN_RxHeaderTypeDef& rxHeader, uint8_t data[]);
 	virtual void OnTick();
 
+	virtual bool IsOnline();
 };
 
 #endif /* CANDEVICES_CHARGERFLATPACK2_H_ */

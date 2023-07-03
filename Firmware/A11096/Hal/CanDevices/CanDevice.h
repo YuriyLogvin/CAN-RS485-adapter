@@ -29,7 +29,7 @@ class CanDevice {
 	//friend void HAL_CAN_RxCpltCallback(CAN_HandleTypeDef* hcan);
 	//friend void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan);
 	uint32_t _ExtIdFilter;
-	int32_t _Ticks;
+	int32_t _LastRcvdPacketTicks;
 	uint16_t _RecieveTimeoutMs;
 	CanDeviceStates _CanDeviceState;
 	static CAN_HandleTypeDef* _hCan;
@@ -53,6 +53,7 @@ public:
 	static void Init(CAN_HandleTypeDef* hCan, Speeds speed, bool silentMode);
 	static void Tick();
 
+	bool IsOnline();
 
 protected:
 	uint32_t _IdDest;
@@ -61,7 +62,6 @@ protected:
 	uint8_t 		_TxData[8];
 	uint32_t 		_RxExtId;
 	uint32_t 		_RxStdId;
-	int32_t _LastReceivingTime;
 
 	bool Transmit(uint8_t dataLen = 8);
 

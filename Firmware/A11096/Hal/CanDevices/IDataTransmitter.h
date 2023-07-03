@@ -12,7 +12,8 @@
 
 class IDataTransmitter {
 public:
-	virtual void Send(uint8_t* data, uint16_t len) = 0;
+	virtual bool Send(uint8_t* data, uint16_t len) = 0;
+	virtual bool IsBusy() = 0;
 };
 
 #endif /* IDATATRANSMITTER_H_ */

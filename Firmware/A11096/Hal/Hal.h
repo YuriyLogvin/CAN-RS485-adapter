@@ -16,10 +16,9 @@
 #define MODE_CURTIS_SDO 3
 #define MODE_CURTIS_PDO 4
 #define MODE_KELLY 5
-
-#ifdef DEBUG
-//#define MODE MODE_CURTIS_SDO
-#endif
+#define MODE_FLATPACK2 6
+#define MODE_CHILLER 7
+#define MODE_EXT_BMS 8
 
 class Hal {
 
@@ -29,6 +28,8 @@ public:
 
 	static bool LedBlue();
 	static void LedBlue(bool);
+	static bool GetSwValue(uint8_t ind);
+
 	static Stm32UsartDmaIt* UsartExt;
 
 	static int32_t GetTickCount();
@@ -39,6 +40,7 @@ public:
 	static void Sleep(uint16_t sleepMs);
 
 	static void UpdateWdt();
+
 
 private:
 };

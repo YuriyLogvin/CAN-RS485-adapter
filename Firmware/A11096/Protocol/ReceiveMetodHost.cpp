@@ -95,7 +95,7 @@ bool ReceiveMetodHost::GetArgumentData(unsigned char argNum, unsigned char* data
 	unsigned char lenT = _Buff[argPos + 1];
 	unsigned char i = 0;
 	for (; (i < dataLen) && (i < lenT); i++)
-		data[i] = _Buff[argPos + 1 + i];
+		data[i] = _Buff[argPos + 2 + i];
 
 	if (lenT != i)
 		return false;

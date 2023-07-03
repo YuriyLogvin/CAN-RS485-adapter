@@ -61,17 +61,29 @@ void Hal::Init(bool canSilentMode)
 
 	auto canSpeed = CanDevice::Speeds::s125k;
 
+#if (MODE == MODE_EXT_BMS)
+	canSpeed = CanDevice::Speeds::s500k;
+#else
 #if (MODE == MODE_SNIFFER)
-	canSpeed = CanDevice::Speeds::s250k;
+	canSpeed = CanDevice::Speeds::s125k;
 #else
 #if (MODE == MODE_CURTIS_SDO)
-	//canSpeed = CanDevice::Speeds::s250k;
+	canSpeed = CanDevice::Speeds::s250k;
 #else
 #if (MODE == MODE_KELLY)
 	canSpeed = CanDevice::Speeds::s250k;
+#else
+#if (MODE == MODE_CHILLER)
+	canSpeed = CanDevice::Speeds::s250k;
+#else
+#if (MODE == MODE_EMULATOR)
+	canSpeed = CanDevice::Speeds::s250k;
+#endif //MODE == MODE_EMULATOR
+#endif //MODE == MODE_CHILLER
 #endif //MODE == MODE_KELLY
 #endif //MODE == MODE_CURTIS_SDO
 #endif //MODE == MODE_SNIFFER
+#endif //MODE == MODE_EXT_BMS
 	CanDevice::Init(&hcan, canSpeed, canSilentMode);
 
 }
@@ -89,6 +101,21 @@ bool Hal::LedBlue()
 void Hal::LedBlue(bool value)
 {
 	HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, value?GPIO_PIN_SET:GPIO_PIN_RESET);
+}
+
+bool Hal::GetSwValue(uint8_t ind)
+{
+	switch (ind)
+	{
+	case 1:
+		return HAL_GPIO_ReadPin(SW1_GPIO_Port, SW1_Pin) != GPIO_PIN_SET;
+	case 2:
+		return HAL_GPIO_ReadPin(SW2_GPIO_Port, SW2_Pin) != GPIO_PIN_SET;
+	case 3:
+		return HAL_GPIO_ReadPin(SW3_GPIO_Port, SW2_Pin) != GPIO_PIN_SET;
+	}
+
+	return false;
 }
 
 short Hal::GetTicksInSecond()

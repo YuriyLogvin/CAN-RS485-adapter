@@ -1,29 +1,43 @@
 /*
  * ICharger.h
  *
- *  Created on: 7 ρεπο. 2021 π.
+ *  Created on: 21 βεπ. 2020 π.
  *      Author: banz
  */
 
-#ifndef CANDEVICES_ICHARGER_H_
-#define CANDEVICES_ICHARGER_H_
+#ifndef CANDEVICES_ICHARGERCONTROLLER_H_
+#define CANDEVICES_ICHARGERCONTROLLER_H_
 
 #include <stdint.h>
 
 class ICharger {
+protected:
+	uint16_t _VoltageNeed;
+	uint16_t _CurrentNeed;
+	uint16_t _VoltageHave;
+	uint16_t _CurrentHave;
+	uint16_t _VoltageOver;
+	uint8_t _ChargerFlags;
+	bool _ChargerEnable;
+	int32_t _RequestsTicks;
+
 public:
-	virtual void SetVoltage(uint16_t val) = 0;
-	virtual uint16_t GetVoltage() = 0;
+	ICharger();
 
-	virtual void SetOverVoltage(uint16_t val) = 0;
+	virtual void SetVoltage(uint16_t); /*In 0.1V*/
+	virtual uint16_t GetVoltage();/*In 0.1V*/
 
-	virtual void SetCurrent(uint16_t val) = 0;
-	virtual uint16_t GetCurrent() = 0;
+	virtual void SetCurrent(uint16_t);/*In 0.1A*/
+	virtual uint16_t GetCurrent();/*In 0.1A*/
 
-	virtual uint8_t GetChargerFlags() = 0;
+	virtual void SetOverVoltage(uint16_t val);/*In 0.1V*/
 
-	virtual void TurnCharger(bool val) = 0;
+	virtual uint8_t GetChargerFlags();
+
+	virtual void TurnCharger(bool value);
+
+	virtual bool IsOnline() = 0;
 
 };
 
-#endif /* CANDEVICES_ICHARGER_H_ */
+#endif /* CANDEVICES_ICHARGERCONTROLLER_H_ */
