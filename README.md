@@ -2,6 +2,9 @@
 
 HW device in shop:
 https://shop.emkit.net/ru_RU/shop/product/rs-485-can-21
+Video:
+https://youtu.be/qmRScu4RGkQ
+
 
 For first use:
 - Clone repository to local folder
